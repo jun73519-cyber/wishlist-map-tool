@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Archive,
   ArchiveRestore,
@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Plus,
   Star,
+  Trash2,
 } from "lucide-react";
 import {
   DndContext,
@@ -33,8 +34,10 @@ import { cn } from "@/lib/utils";
 import {
   type CandidateRow,
   type Group,
+  type Profile,
   type StageKey,
 } from "@/lib/schema";
+import { createMinimalProfile } from "@/lib/data/factories";
 import { DeleteConfirmDialog } from "@/components/workspace/DeleteConfirmDialog";
 import { SortableCandidateRow } from "@/components/workspace/SortableCandidateRow";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -59,7 +62,7 @@ import { STAGE_LABELS } from "@/lib/labels";
 // dnd-kit のスクリーンリーダー向け日本語化。
 const screenReaderInstructions: ScreenReaderInstructions = {
   draggable:
-    "Space または Enter で候補者を持ち上げ、矢印キーで移動、Space で確定、Esc でキャンセルします。",
+    "Space または Enter で場所を持ち上げ、矢印キーで移動、Space で確定、Esc でキャンセルします。",
 };
 
 type CandidateListPaneProps = {
@@ -67,8 +70,10 @@ type CandidateListPaneProps = {
   selectedCandidateId: string;
   onSelectCandidate: (id: string) => void;
   onAddCandidate: (stage: StageKey, name: string) => void;
+  onAddCandidateWithProfile: (stage: StageKey, profile: Profile) => void;
   onArchiveCandidate: (id: string) => void;
   onRestoreCandidate: (id: string) => void;
+  onDeleteCandidate: (id: string) => void;
   onMoveCandidate: (id: string, toStage: StageKey, toIndex: number) => void;
 };
 
@@ -77,8 +82,10 @@ export function CandidateListPane({
   selectedCandidateId,
   onSelectCandidate,
   onAddCandidate,
+  onAddCandidateWithProfile,
   onArchiveCandidate,
   onRestoreCandidate,
+  onDeleteCandidate,
   onMoveCandidate,
 }: CandidateListPaneProps) {
   const [addDialogStage, setAddDialogStage] = useState<{
@@ -86,6 +93,10 @@ export function CandidateListPane({
     label: string;
   } | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
     name: string;
   } | null>(null);
@@ -119,11 +130,11 @@ export function CandidateListPane({
 
   const announcements: Announcements = {
     onDragStart: ({ active }) => {
-      const name = (active.data.current?.name as string | undefined) ?? "候補者";
+      const name = (active.data.current?.name as string | undefined) ?? "場所";
       return `${name}を持ち上げました。`;
     },
     onDragOver: ({ active, over }) => {
-      const name = (active.data.current?.name as string | undefined) ?? "候補者";
+      const name = (active.data.current?.name as string | undefined) ?? "場所";
       if (!over) return `${name}を移動中です。`;
       const overContainer = over.data.current?.containerId as
         | StageKey
@@ -133,7 +144,7 @@ export function CandidateListPane({
       return `${name}を移動中です。`;
     },
     onDragEnd: ({ active, over }) => {
-      const name = (active.data.current?.name as string | undefined) ?? "候補者";
+      const name = (active.data.current?.name as string | undefined) ?? "場所";
       if (!over) return `${name}の移動をキャンセルしました。`;
       const overContainer =
         (over.data.current?.containerId as StageKey | undefined) ??
@@ -145,7 +156,7 @@ export function CandidateListPane({
       return `${name}を「${STAGE_LABELS[overContainer]}」に移動しました。`;
     },
     onDragCancel: ({ active }) => {
-      const name = (active.data.current?.name as string | undefined) ?? "候補者";
+      const name = (active.data.current?.name as string | undefined) ?? "場所";
       return `${name}の移動をキャンセルしました。`;
     },
   };
@@ -196,11 +207,37 @@ export function CandidateListPane({
     onMoveCandidate(String(active.id), overContainer, toIndex);
   };
 
+  // 「AI下書き」: /api/draft-place で profile を生成し、それを持つ場所を追加する。
+  // 失敗時は throw して AddItemDialog 側でエラー表示させる。
+  const handleAiGenerate = useCallback(
+    async (stage: StageKey, name: string, url: string) => {
+      const res = await fetch("/api/draft-place", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, url }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        draft?: Partial<Profile>;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.draft) {
+        throw new Error(data?.error ?? "下書きの生成に失敗しました。");
+      }
+      const profile: Profile = {
+        ...createMinimalProfile(name),
+        ...data.draft,
+        name,
+      };
+      onAddCandidateWithProfile(stage, profile);
+    },
+    [onAddCandidateWithProfile],
+  );
+
   return (
-    <section className="flex w-[280px] shrink-0 flex-col border-r border-border bg-background">
+    <section className="flex h-full w-full min-w-0 flex-col border-r border-border bg-background">
       <header className="flex h-12 shrink-0 items-center border-b border-border px-3">
         <h2 className="truncate text-sm font-semibold text-foreground">
-          フロントエンドエンジニア
+          行きたい場所
         </h2>
       </header>
       <ScrollArea className="min-h-0 flex-1">
@@ -233,6 +270,7 @@ export function CandidateListPane({
                 onArchiveRequest={(id, name) =>
                   setArchiveTarget({ id, name })
                 }
+                onDeleteRequest={(id, name) => setDeleteTarget({ id, name })}
               />
             ))}
             {archivedGroup && (
@@ -244,6 +282,7 @@ export function CandidateListPane({
                 selectedCandidateId={selectedCandidateId}
                 onSelectCandidate={onSelectCandidate}
                 onRestore={onRestoreCandidate}
+                onDeleteRequest={(id, name) => setDeleteTarget({ id, name })}
               />
             )}
           </div>
@@ -270,12 +309,17 @@ export function CandidateListPane({
           onOpenChange={(open) => {
             if (!open) setAddDialogStage(null);
           }}
-          title="候補者を追加"
-          description={`「${addDialogStage.label}」ステージに候補者を追加します`}
-          fieldLabel="氏名"
-          fieldId="candidate-name"
-          placeholder="例: 山田 太郎"
+          title="行きたい場所を追加"
+          description={`「${addDialogStage.label}」に新しい場所を追加します`}
+          fieldLabel="場所名"
+          fieldId="place-name"
+          placeholder="例: 京都・伏見稲荷大社"
           onAdd={(name) => onAddCandidate(addDialogStage.stage, name)}
+          urlFieldLabel="参考 URL（任意）"
+          urlPlaceholder="例: 旅行系の YouTube や記事の URL"
+          onAiGenerate={(name, url) =>
+            handleAiGenerate(addDialogStage.stage, name, url)
+          }
         />
       )}
 
@@ -284,14 +328,31 @@ export function CandidateListPane({
         onOpenChange={(open) => {
           if (!open) setArchiveTarget(null);
         }}
-        title="候補者をアーカイブしますか？"
+        title="この場所を見送りにしますか？"
         itemName={archiveTarget?.name ?? ""}
-        description={`「${archiveTarget?.name ?? ""}」をアーカイブします。後で「アーカイブ済み」から復元できます。`}
-        actionLabel="アーカイブ"
+        description={`「${archiveTarget?.name ?? ""}」を見送りにします。後で「見送り」から復元できます。`}
+        actionLabel="見送り"
         onConfirm={() => {
           if (archiveTarget) {
             onArchiveCandidate(archiveTarget.id);
             setArchiveTarget(null);
+          }
+        }}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="この場所を削除しますか？"
+        itemName={deleteTarget?.name ?? ""}
+        description={`「${deleteTarget?.name ?? ""}」を完全に削除します。この操作は元に戻せません。`}
+        actionLabel="削除"
+        onConfirm={() => {
+          if (deleteTarget) {
+            onDeleteCandidate(deleteTarget.id);
+            setDeleteTarget(null);
           }
         }}
       />
@@ -307,6 +368,7 @@ function StageGroup({
   onSelectCandidate,
   onAddRequest,
   onArchiveRequest,
+  onDeleteRequest,
 }: {
   stage: StageKey;
   label: string;
@@ -315,6 +377,7 @@ function StageGroup({
   onSelectCandidate: (id: string) => void;
   onAddRequest: () => void;
   onArchiveRequest: (id: string, name: string) => void;
+  onDeleteRequest: (id: string, name: string) => void;
 }) {
   // 空ステージでもドロップを受け取れるようにする（最後の 1 名を別ステージへ
   // 動かした後の戻し先を保つため、ステージは常時表示）。
@@ -341,7 +404,7 @@ function StageGroup({
           variant="ghost"
           size="icon-xs"
           onClick={onAddRequest}
-          aria-label={`${label} に候補者を追加`}
+          aria-label={`${label} に場所を追加`}
           className="text-muted-foreground hover:text-foreground"
         >
           <Plus aria-hidden="true" />
@@ -380,13 +443,21 @@ function StageGroup({
                 selected={cand.id === selectedCandidateId}
                 onSelect={onSelectCandidate}
                 actions={
-                  <DropdownMenuItem
-                    variant="destructive"
-                    onSelect={() => onArchiveRequest(cand.id, cand.name)}
-                  >
-                    <Archive />
-                    アーカイブ
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => onArchiveRequest(cand.id, cand.name)}
+                    >
+                      <Archive />
+                      見送り
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onClick={() => onDeleteRequest(cand.id, cand.name)}
+                    >
+                      <Trash2 />
+                      削除
+                    </DropdownMenuItem>
+                  </>
                 }
               />
             ))
@@ -405,6 +476,7 @@ function ArchivedGroup({
   selectedCandidateId,
   onSelectCandidate,
   onRestore,
+  onDeleteRequest,
 }: {
   label: string;
   items: CandidateRow[];
@@ -413,6 +485,7 @@ function ArchivedGroup({
   selectedCandidateId: string;
   onSelectCandidate: (id: string) => void;
   onRestore: (id: string) => void;
+  onDeleteRequest: (id: string, name: string) => void;
 }) {
   return (
     <Collapsible open={open} onOpenChange={onOpenChange}>
@@ -450,6 +523,7 @@ function ArchivedGroup({
               selected={cand.id === selectedCandidateId}
               onSelect={onSelectCandidate}
               onRestore={onRestore}
+              onDeleteRequest={onDeleteRequest}
             />
           ))}
         </ul>
@@ -463,11 +537,13 @@ function ArchivedRowItem({
   selected,
   onSelect,
   onRestore,
+  onDeleteRequest,
 }: {
   cand: CandidateRow;
   selected: boolean;
   onSelect: (id: string) => void;
   onRestore: (id: string) => void;
+  onDeleteRequest: (id: string, name: string) => void;
 }) {
   return (
     <li className="group/candidate relative">
@@ -515,9 +591,16 @@ function ArchivedRowItem({
         />
         <DropdownMenuContent side="right" align="start">
           <DropdownMenuGroup>
-            <DropdownMenuItem onSelect={() => onRestore(cand.id)}>
+            <DropdownMenuItem onClick={() => onRestore(cand.id)}>
               <ArchiveRestore />
               復元
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDeleteRequest(cand.id, cand.name)}
+            >
+              <Trash2 />
+              削除
             </DropdownMenuItem>
           </DropdownMenuGroup>
         </DropdownMenuContent>

@@ -47,10 +47,14 @@ export function GlobalHeader({
           <BreadcrumbItem className="shrink-0">
             <BreadcrumbLink>{departmentTitle}</BreadcrumbLink>
           </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem className="shrink-0">
-            <BreadcrumbLink>{positionTitle}</BreadcrumbLink>
-          </BreadcrumbItem>
+          {positionTitle && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem className="shrink-0">
+                <BreadcrumbLink>{positionTitle}</BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
           <BreadcrumbSeparator />
           <BreadcrumbItem className="min-w-0">
             <BreadcrumbPage className="truncate font-medium">

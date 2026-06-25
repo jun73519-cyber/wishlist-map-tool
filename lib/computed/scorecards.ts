@@ -1,7 +1,7 @@
 /**
  * Scorecard / Candidate の派生計算（評価系）SSoT。
  *
- * Pane 2 候補者行の平均スコアバッジ (★ 4.5 / —) と、
+ * Pane 2 場所行の平均スコアバッジ (★ 4.5 / —) と、
  * Pane 3 評価カードの「平均スコア」行は、同じ意味の値を表示する。
  * 同じ計算を 2 箇所で持つと「ある日 Pane 2 だけ違う値が出る」事故が発生するため、
  * 計算ロジックは本ファイルの 3 関数に集約する MUST。
@@ -9,8 +9,8 @@
  * 関連:
  *   - openspec/decision/0013-list-pane-lightweight-header-and-row-evaluation.md
  *   - openspec/decision/0010-pane-responsibility-and-candidate-detail-mode.md
- *     §11 候補者単位 vs ステージ単位の責務分離（評価はステージ単位だが、
- *     候補者代表値として「最新 done scorecard の平均」を使う）
+ *     §11 場所単位 vs ステージ単位の責務分離（評価はステージ単位だが、
+ *     場所代表値として「最新 done scorecard の平均」を使う）
  */
 
 import {
@@ -25,7 +25,7 @@ import {
 /**
  * 「最後に done 状態となった scorecard」を返す。done が存在しない場合は undefined。
  *
- * 配列の末尾に近いものを優先することで、選考フロー (書類 → 一次 → 二次 → 最終) で
+ * 配列の末尾に近いものを優先することで、検討フロー (気になる → 計画中 → 予約済 → 訪問済) で
  * 「最も進んだステージの評価」を代表値として取り出せる。シード `INITIAL_SCORECARDS`
  * は STAGE_ORDER と同じ順で並ぶ前提（design.md / spec.md）。
  */
@@ -52,11 +52,11 @@ export function calculateAverageScore(axisScores: AxisScores): number | null {
 }
 
 /**
- * 候補者の「代表平均スコア」を返す。
+ * 場所の「代表平均スコア」を返す。
  * = 最新 done scorecard の axisScores の平均。
  *
- * Pane 2 候補者行のサブテキスト (★ 4.5 / —) と、Pane 3 評価カードの「平均スコア」行で
- * 同じ意味の値を出すために使う。done scorecard が無い・全 axis が null・候補者が
+ * Pane 2 場所行のサブテキスト (★ 4.5 / —) と、Pane 3 評価カードの「平均スコア」行で
+ * 同じ意味の値を出すために使う。done scorecard が無い・全 axis が null・場所が
  * scorecards を持たないいずれの場合も null（未評価扱い）。
  */
 export function getCandidateAverageScore(candidate: Candidate): number | null {
@@ -67,7 +67,7 @@ export function getCandidateAverageScore(candidate: Candidate): number | null {
 
 /**
  * 完了済み（`status === "done"`）かつコメントあり（`comment` が truthy）の
- * scorecard を STAGE_ORDER 順で返す。Pane 3「担当者コメント」Card の行リストに使う。
+ * scorecard を STAGE_ORDER 順で返す。Pane 3「メモ」Card の行リストに使う。
  *
  * 空配列が返った場合は「コメントはまだ記入されていません」の placeholder を表示する。
  */
@@ -83,7 +83,7 @@ export function getCommentedScorecards(scorecards: Scorecard[]): Scorecard[] {
 }
 
 /**
- * scorecards 配列から候補者の代表平均スコアを計算する。
+ * scorecards 配列から場所の代表平均スコアを計算する。
  * `getCandidateAverageScore` の Candidate 型を要求しない版。
  * Pane 3 ヘッダー帯の `<ScoreLabel>` で使う。
  */
@@ -105,7 +105,7 @@ export function getScorecardsAverageScore(
  *   - decision なし、date あり (truthy)    → planned (予定済)
  *   - 両方なし                              → pending (未着手)
  *
- * Pane 3 選考フローカードの StageIcon、コメント抽出のフィルタ、ヘッダー帯の
+ * Pane 3 検討フローカードの StageIcon、コメント抽出のフィルタ、ヘッダー帯の
  * ★ スコア表示など、status を必要とするすべての表示で使う。
  */
 export function deriveStageStatus(

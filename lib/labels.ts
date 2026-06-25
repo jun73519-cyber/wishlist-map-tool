@@ -1,48 +1,48 @@
 /**
- * 雛形の表示文言（labels）。
+ * アプリの表示文言（labels）。
  *
- * 業種を変える受講生は、このファイルの値を業種に合わせて書き換える。
- * 例: 学校なら EVALUATION_AXIS を「学力 / 思考力 / 表現力 / 主体性」に、
- *     STAGE_LABELS を「見学 / 体験授業 / 面接 / 契約」に変更する。
+ * このファイルは「行きたい場所マップ帳」ドメインに合わせた表示名の集約先。
+ * 別の用途に作り変えるときは、ここの値（評価軸・ステージ名・セクション見出し）を
+ * 書き換える。内部キー（schema の `wishLevel` / `screening` 等）は据え置いたまま、
+ * 表示名だけを差し替える運用にしている。
  *
  * 後フェーズの予定:
- *   - Phase C: 評価観点と選考ステージを Tagged Union 化したデータ駆動に
+ *   - Phase C: 評価軸と検討ステージを Tagged Union 化したデータ駆動に
  *   - 現時点では key → 日本語ラベルの単純なマッピングとして持つ
  */
 
 import { type AxisKey, type StageKey } from "@/lib/schema";
 
-// ===== 評価観点（4 軸固定、ADR-0005 §13 / design.md D57） =====
-// この雛形は 実績 / 思考力 / コミュニケーション / カルチャーフィット の 4 軸を採用する
+// ===== 評価軸（1 軸: 行きたい度） =====
+// 「行きたい場所マップ帳」では場所への "行きたい度" を 1 軸 ★ で表す。
 
 export const EVALUATION_AXIS: Record<AxisKey, string> = {
-  achievements: "実績",
-  thinkingAbility: "思考力",
-  communication: "コミュニケーション",
-  cultureFit: "カルチャーフィット",
+  wishLevel: "行きたい度",
 } as const;
 
 // Pane 2 のグループ見出しに出すステージ表示名（日本語）。
-// `Scorecard.label` とは独立に持つ（候補者ごとの個別ラベルではなく、
-// 列としてのステージ名なので Record で固定）。
+// 場所の「検討ステージ」: 気になる → 計画中 → 予約済 → 訪問済。
+// `Scorecard.label` とは独立に持つ（場所ごとの個別ラベルではなく、
+// 列としてのステージ名なので Record で固定）。内部キー（screening 等）は
+// 雛形の構造を維持するため据え置き、表示名のみ旅行ドメインに差し替えている。
 export const STAGE_LABELS: Record<StageKey, string> = {
-  screening: "書類選考",
-  first: "一次面接",
-  second: "二次面接",
-  final: "最終面接",
+  screening: "気になる",
+  first: "計画中",
+  second: "予約済",
+  final: "訪問済",
 };
 
-// Pane 2 末尾の「アーカイブ済み」グループの見出しラベル。
-// archived === true の候補者を束ねる仮想グループで、ステージとは直交した概念。
-export const ARCHIVED_GROUP_LABEL = "アーカイブ済み";
+// Pane 2 末尾の「見送り」グループの見出しラベル。
+// archived === true の場所を束ねる仮想グループで、ステージとは直交した概念。
+export const ARCHIVED_GROUP_LABEL = "見送り";
 
-// ===== Pane 3 ダッシュボードのセクション見出し（ADR-0014） =====
+// ===== Pane 3 ダッシュボードのセクション見出し =====
 
 export const PANE3_SECTION = {
-  applicationInfo: "応募情報",
-  recruitingConditions: "採用条件",
-  screeningFlow: "選考フロー",
-  screeningFlowDescription: "進捗と面接担当者のコメント",
+  applicationInfo: "基本情報",
+  recruitingConditions: "旅行メモ",
+  screeningFlow: "検討フロー",
+  screeningFlowDescription: "ステージごとのメモと記録",
 } as const;
 
 // ===== Pane 4 セクション id（ADR-0015 §19 でモード 1 廃止、m2 のみ） =====

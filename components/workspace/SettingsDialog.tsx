@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { type Department } from "@/lib/schema";
+import { resetToSeedData } from "@/lib/storage";
 import { DeleteConfirmDialog } from "@/components/workspace/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,7 @@ export function SettingsDialogContent({
     id: string;
     name: string;
   } | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
 
   const handleAddDept = () => {
     const trimmed = newDeptName.trim();
@@ -54,13 +56,13 @@ export function SettingsDialogContent({
         <DialogHeader>
           <DialogTitle>ワークスペース設定</DialogTitle>
           <DialogDescription>
-            事業部やワークスペース名を管理します
+            エリア区分やワークスペース名を管理します
           </DialogDescription>
         </DialogHeader>
 
         <FieldGroup>
           <Field>
-            <FieldLabel htmlFor="settings-new-dept">事業部</FieldLabel>
+            <FieldLabel htmlFor="settings-new-dept">エリア区分</FieldLabel>
             <ScrollArea className="max-h-48">
               <div className="divide-y divide-border rounded-lg border border-border">
                 {departments.map((dept) => (
@@ -85,7 +87,7 @@ export function SettingsDialogContent({
                 ))}
                 {departments.length === 0 && (
                   <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                    事業部がありません
+                    エリア区分がありません
                   </div>
                 )}
               </div>
@@ -93,7 +95,7 @@ export function SettingsDialogContent({
             <InputGroup>
               <InputGroupInput
                 id="settings-new-dept"
-                placeholder="新しい事業部名"
+                placeholder="新しいエリア区分名"
                 value={newDeptName}
                 onChange={(e) => setNewDeptName(e.target.value)}
                 onKeyDown={(e) => {
@@ -120,7 +122,27 @@ export function SettingsDialogContent({
             <FieldLabel htmlFor="settings-workspace-name">
               ワークスペース名
             </FieldLabel>
-            <Input id="settings-workspace-name" defaultValue="採用管理" />
+            <Input id="settings-workspace-name" defaultValue="行きたい場所マップ帳" />
+          </Field>
+
+          <Separator />
+
+          <Field>
+            <FieldLabel>データ</FieldLabel>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                追加・編集した内容を消して初期サンプルに戻します。
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="shrink-0"
+                onClick={() => setResetConfirmOpen(true)}
+              >
+                サンプルデータに戻す
+              </Button>
+            </div>
           </Field>
         </FieldGroup>
 
@@ -134,7 +156,7 @@ export function SettingsDialogContent({
         onOpenChange={(open) => {
           if (!open) setDeleteDeptTarget(null);
         }}
-        title="事業部を削除しますか？"
+        title="エリア区分を削除しますか？"
         itemName={deleteDeptTarget?.name ?? ""}
         onConfirm={() => {
           if (deleteDeptTarget) {
@@ -142,6 +164,16 @@ export function SettingsDialogContent({
             setDeleteDeptTarget(null);
           }
         }}
+      />
+
+      <DeleteConfirmDialog
+        open={resetConfirmOpen}
+        onOpenChange={setResetConfirmOpen}
+        title="サンプルデータに戻しますか？"
+        itemName=""
+        description="追加・編集した場所やエリアはすべて消え、初期サンプルに戻ります。この操作は元に戻せません。"
+        actionLabel="戻す"
+        onConfirm={resetToSeedData}
       />
     </>
   );

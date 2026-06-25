@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * Pane 2 のステージグループ用、ドラッグ可能な候補者行。
+ * Pane 2 のステージグループ用、ドラッグ可能な場所行。
  *
- * - 行全体クリック = 候補者を選択（onSelect 経由）
+ * - 行全体クリック = 場所を選択（onSelect 経由）
  * - 左端のグリップだけが drag listener を持つ。`MoreHorizontal` メニューや
  *   行クリックとは衝突しない（`activationConstraint: distance` でも吸収済み）
  * - DragOverlay 描画中は `isDragging` で半透明 + pointer-events 抑止

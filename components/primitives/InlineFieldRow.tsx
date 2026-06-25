@@ -6,16 +6,16 @@
  *
  * 利用例:
  *   <dl className="flex flex-col gap-2.5 text-sm">
- *     <InlineFieldRow label="名前">
- *       <InlineTextField value={name} onSave={...} ariaLabel="名前" />
+ *     <InlineFieldRow label="場所名">
+ *       <InlineTextField value={name} onSave={...} ariaLabel="場所名" />
  *     </InlineFieldRow>
- *     <InlineFieldRow label="生年月日">
- *       <InlineDateField value={birthday} onSave={...} ariaLabel="生年月日" />
+ *     <InlineFieldRow label="行く予定日">
+ *       <InlineDateField value={date} onSave={...} ariaLabel="行く予定日" />
  *     </InlineFieldRow>
  *   </dl>
  *
- * 雛形では Pane 3 ヘッダー帯トグル内の「応募情報」/「連絡先」、
- * 採用条件カード、Pane 4 モード 2「基本情報」で使う。
+ * 雛形では Pane 3 の「基本情報」/「リンク・連絡先」、
+ * 旅行メモカード、Pane 4 モード 2「基本情報」で使う。
  */
 
 export type InlineFieldRowProps = {

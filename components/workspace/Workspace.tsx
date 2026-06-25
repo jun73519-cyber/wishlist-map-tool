@@ -7,8 +7,8 @@
  *   保持し、各ペインに props として渡す。
  *   `previousDetail` state は ADR-0011 §6 大決定 D で削除した（戻り先が候詳に固定
  *   されたため、直前の詳細を 1 段階覚える概念が不要になった）。
- * - Pane 3 = 候補者ダッシュボード（人物軸の編集: ヘッダー帯 + 採用条件 + 選考フロー）
- * - Pane 4 = ステージ軸の編集（選考ステージ詳細のみ）
+ * - Pane 3 = 場所ダッシュボード（場所軸の編集: ヘッダー帯 + 旅行メモ + 検討フロー）
+ * - Pane 4 = ステージ軸の編集（検討ステージ詳細のみ）
  *   ADR-0015 §9 大決定 G により、Pane 4 のデフォルト state は `null`
  *   （ステージ未選択 = 畳み状態）。◀ ボタンは撤廃。
  *
@@ -40,7 +40,7 @@
  *   - openspec/changes/add-4pane-workspace-template/design.md D51〜D56 / D65
  */
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 import {
   type Profile,
@@ -48,9 +48,11 @@ import {
   type StageKey,
   type Department,
   type Candidate,
+  type Attachment,
   type Group,
   type SelectedDetail,
   STAGE_ORDER,
+  candidatesSchema,
 } from "@/lib/schema";
 import {
   createMinimalProfile,
@@ -59,11 +61,19 @@ import {
 import { getCandidateAverageScore } from "@/lib/computed/scorecards";
 import { ARCHIVED_GROUP_LABEL, STAGE_LABELS } from "@/lib/labels";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 import { GlobalHeader } from "@/components/workspace/GlobalHeader";
 import { PositionPane } from "@/components/workspace/PositionPane";
 import { CandidateListPane } from "@/components/workspace/CandidateListPane";
 import { CandidateDashboardPane } from "@/components/workspace/CandidateDashboardPane";
-import { CandidateDetailPane } from "@/components/workspace/CandidateDetailPane";
+import {
+  CandidateDetailPane,
+  Pane4CollapsedRail,
+} from "@/components/workspace/CandidateDetailPane";
 
 // ========== UI 内部型 ==========
 //
@@ -110,16 +120,64 @@ export function Workspace({
   const [scrollAnchor, setScrollAnchor] = useState<string | null>(null);
   // ユーザーが手動で Pane 4 を畳んだか。ステージ選択は保持しつつ畳む用途。
   const [pane4ManuallyClosed, setPane4ManuallyClosed] = useState(false);
-  // Pane 3 ヘッダー帯（Collapsible）の開閉。候補者切替で閉じ、新規追加で開く。
+  // Pane 3 ヘッダー帯（Collapsible）の開閉。場所切替で閉じ、新規追加で開く。
   const [applicationInfoOpen, setApplicationInfoOpen] = useState(false);
+  // Pane 1 で選択中のエリア（position.id）。null は「すべて」（全件表示）。
+  // エリアを選ぶと Pane 2 はその area を持つ場所だけに絞り込まれる。
+  const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+
+  // 場所(candidates)はデータベース(Neon)に保存し、リロード・別端末・他人からも
+  // 同じものが見えるようにする。`/api/places` 経由で読み書きする（SQL や接続文字列は
+  // サーバー側だけが扱う）。エリア(departments)・アプリ設定はリポジトリの JSON のまま
+  // で、props（seed）から受け取る（保存先の切り分けの理由は lib/db.ts 冒頭参照）。
+  //
+  // 初期描画は props（seed）で行い、マウント後に DB の内容を読み込んで差し替える
+  // （SSR とのハイドレーション不一致を避けるため初期 state は props のまま）。
+  const [hydrated, setHydrated] = useState(false);
+  // DB は外部ストレージ。props 由来の派生 state の複製ではなく、マウント後一度きりの
+  // ハイドレーション（SSR 一致のため初期 state は props のまま）。
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/places", { cache: "no-store" });
+        if (res.ok) {
+          const parsed = candidatesSchema.safeParse(await res.json());
+          if (!cancelled && parsed.success) setCandidates(parsed.data);
+        }
+      } catch {
+        // 通信・DB 失敗時は seed（props）のまま続行する
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  // 保存は hydrated 後のみ（初回の seed を DB に書き戻して読み込みを上書きするのを防ぐ）。
+  // 連続編集で叩きすぎないよう少しデバウンスしてから全件を同期保存する。
+  useEffect(() => {
+    if (!hydrated) return;
+    const timer = setTimeout(() => {
+      fetch("/api/places", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(candidates),
+      }).catch(() => {
+        // 保存失敗は致命的でないので握りつぶす（次の編集で再送される）
+      });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [candidates, hydrated]);
 
   // Pane 4 の展開状態を派生計算（ADR-0015 §9 大決定 G）。
   // selectedDetail !== null かつ手動で畳んでいない → 開いている。
   const pane4Open = selectedDetail !== null && !pane4ManuallyClosed;
 
-  // アクティブ候補者を取得。`INITIAL_CANDIDATES` が常に最低 1 名持つ前提だが、
+  // アクティブ場所を取得。`INITIAL_CANDIDATES` が常に最低 1 名持つ前提だが、
   // 万一 find が undefined を返す（未来に candidates の削除機能が入った場合等）
-  // ケースに備えて先頭候補者にフォールバックする。
+  // ケースに備えて先頭場所にフォールバックする。
   const activeCandidate =
     candidates.find((c) => c.id === selectedCandidateId) ?? candidates[0];
   const profile = activeCandidate.profile;
@@ -164,12 +222,12 @@ export function Workspace({
     [selectedCandidateId],
   );
 
-  // Pane 2 の候補者行クリックでアクティブ候補者を切り替える。
-  // - selectedDetail が「ステージ詳細」だった場合、新候補者にそのステージの
-  //   scorecard が無ければ Pane 4 を **候補者詳細にフォールバック**する
+  // Pane 2 の場所行クリックでアクティブ場所を切り替える。
+  // - selectedDetail が「ステージ詳細」だった場合、新場所にそのステージの
+  //   scorecard が無ければ Pane 4 を **場所詳細にフォールバック**する
   //   （ADR-0011 §7 大決定 E、旧 null フォールバックを撤回）。c2 以外は
-  //   scorecards: [] のため、c2 → 別候補者の切替時はほぼ常に候詳へフォールバック。
-  // - selectedDetail が「候補者詳細」のときは維持してよい（profile はどの候補者にも
+  //   scorecards: [] のため、c2 → 別場所の切替時はほぼ常に候詳へフォールバック。
+  // - selectedDetail が「場所詳細」のときは維持してよい（profile はどの場所にも
   //   必ず存在する）。
   // - previousDetail state は ADR-0011 §6 大決定 D で削除済みのため、リセット不要。
   const selectCandidate = useCallback((id: string) => {
@@ -179,26 +237,54 @@ export function Workspace({
     setPane4ManuallyClosed(false);
   }, []);
 
-  const addCandidate = useCallback((stage: StageKey, name: string) => {
-    const newId = `c-${Date.now()}`;
-    const newCandidate: Candidate = {
-      id: newId,
-      profile: createMinimalProfile(name),
-      scorecards: [],
-      stage,
-      archived: false,
-    };
-    setCandidates((prev) => [...prev, newCandidate]);
-    setSelectedCandidateId(newId);
-    setSelectedDetail(null);
-    setApplicationInfoOpen(true);
-    setPane4ManuallyClosed(false);
-  }, []);
+  const addCandidate = useCallback(
+    (stage: StageKey, name: string) => {
+      const newId = `c-${Date.now()}`;
+      const newCandidate: Candidate = {
+        id: newId,
+        profile: createMinimalProfile(name),
+        scorecards: [],
+        stage,
+        area: selectedAreaId ?? "",
+        archived: false,
+      };
+      setCandidates((prev) => [...prev, newCandidate]);
+      setSelectedCandidateId(newId);
+      setSelectedDetail(null);
+      setApplicationInfoOpen(true);
+      setPane4ManuallyClosed(false);
+    },
+    [selectedAreaId],
+  );
 
-  // 候補者をアーカイブ（論理削除）する。データは残し `archived: true` を立てる。
+  // 「AI下書き」で生成済みの profile を持つ場所を追加する。`addCandidate` と
+  // 同じ挙動（追加 → アクティブ化 → 基本情報を開く）だが、最小 profile の代わりに
+  // 渡された profile をそのまま使う。生成は呼び出し側（CandidateListPane）が
+  // `/api/draft-place` を叩いて行い、ここには完成した profile が渡る。
+  const addCandidateWithProfile = useCallback(
+    (stage: StageKey, profile: Profile) => {
+      const newId = `c-${Date.now()}`;
+      const newCandidate: Candidate = {
+        id: newId,
+        profile,
+        scorecards: [],
+        stage,
+        area: selectedAreaId ?? "",
+        archived: false,
+      };
+      setCandidates((prev) => [...prev, newCandidate]);
+      setSelectedCandidateId(newId);
+      setSelectedDetail(null);
+      setApplicationInfoOpen(true);
+      setPane4ManuallyClosed(false);
+    },
+    [selectedAreaId],
+  );
+
+  // 場所をアーカイブ（論理削除）する。データは残し `archived: true` を立てる。
   // 復元は `restoreCandidate` から、もしくは Pane 2「アーカイブ済み」グループの
-  // 「復元」ボタン経由。アクティブ候補者をアーカイブした場合は、非 archived の
-  // 先頭候補者にフォールバックし、ステージ詳細（Pane 4）はクリアする。
+  // 「復元」ボタン経由。アクティブ場所をアーカイブした場合は、非 archived の
+  // 先頭場所にフォールバックし、ステージ詳細（Pane 4）はクリアする。
   const archiveCandidate = useCallback((id: string) => {
     setCandidates((prev) => {
       const next = prev.map((c) =>
@@ -215,7 +301,7 @@ export function Workspace({
     setPane4ManuallyClosed(false);
   }, []);
 
-  // アーカイブ済み候補者を元のステージに復元する。`stage` は archived 中も保持
+  // アーカイブ済み場所を元のステージに復元する。`stage` は archived 中も保持
   // しているので、そのステージへ戻すだけでよい。
   const restoreCandidate = useCallback((id: string) => {
     setCandidates((prev) =>
@@ -223,14 +309,31 @@ export function Workspace({
     );
   }, []);
 
-  // 候補者を別ステージへ移動 / 同ステージ内で並び替え。
+  // 場所を完全に削除する（重複・誤追加の削除用。「見送り」=アーカイブとは別物で
+  // 復元不可）。アクティブな場所を削除したら、非 archived の先頭 → なければ先頭へ
+  // フォールバックし、ステージ詳細（Pane 4）はクリアする。
+  const deleteCandidate = useCallback((id: string) => {
+    setCandidates((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      setSelectedCandidateId((prevId) => {
+        if (prevId !== id) return prevId;
+        const fallback = next.find((c) => !c.archived) ?? next[0];
+        return fallback ? fallback.id : "";
+      });
+      return next;
+    });
+    setSelectedDetail(null);
+    setPane4ManuallyClosed(false);
+  }, []);
+
+  // 場所を別ステージへ移動 / 同ステージ内で並び替え。
   //
   // `toStage` は移動先のステージキー。`toIndex` はそのステージグループ内での
   // 0-origin の挿入位置。配列順を SSoT としているため、candidates 配列上の
   // 絶対インデックスに変換して `splice` 相当の挿入を行う。
   //
   // 同ステージ内ドラッグ・別ステージへのドラッグの両方をこの 1 関数で扱う。
-  // archived 候補者は対象外（DnD はアクティブな候補者のみ可能）。
+  // archived 場所は対象外（DnD はアクティブな場所のみ可能）。
   const moveCandidate = useCallback(
     (id: string, toStage: StageKey, toIndex: number) => {
       setCandidates((prev) => {
@@ -301,8 +404,8 @@ export function Workspace({
     );
   }, []);
 
-  // 評価観点 ★ の編集ハンドラ。フェーズ 3A から「アクティブ候補者」の
-  // scorecards を更新する形に変更（candidates 配列の中の該当候補者だけを差し替え）。
+  // 評価観点 ★ の編集ハンドラ。フェーズ 3A から「アクティブ場所」の
+  // scorecards を更新する形に変更（candidates 配列の中の該当場所だけを差し替え）。
   const updateAxisScore = useCallback(
     (stage: StageKey, axis: AxisKey, value: number | null) => {
       setCandidates((prev) =>
@@ -326,7 +429,7 @@ export function Workspace({
   // Pane 4 モード 2「メタ情報」の inline edit から呼ばれる。
   // `decision` だけ undefined を許すため、空文字は undefined として扱う
   // （`MetaRow` 廃止前の "未判定" 表示の代替: `EditableFieldRow` 側で空 = "未設定"）。
-  // フェーズ 3A: アクティブ候補者の scorecards を更新する形に変更。
+  // フェーズ 3A: アクティブ場所の scorecards を更新する形に変更。
   const updateScorecardField = useCallback(
     (stage: StageKey, field: EditableScorecardKey, value: string) => {
       setCandidates((prev) =>
@@ -353,14 +456,98 @@ export function Workspace({
     [selectedCandidateId],
   );
 
+  // 写真・資料（添付）の追加。アクティブな場所の該当ステージ scorecard に足す。
+  const addAttachment = useCallback(
+    (stage: StageKey, attachment: Attachment) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === selectedCandidateId
+            ? {
+                ...c,
+                scorecards: c.scorecards.map((s) =>
+                  s.stage === stage
+                    ? { ...s, attachments: [...s.attachments, attachment] }
+                    : s,
+                ),
+              }
+            : c,
+        ),
+      );
+    },
+    [selectedCandidateId],
+  );
+
+  // 写真・資料（添付）の削除。
+  const removeAttachment = useCallback(
+    (stage: StageKey, attachmentId: string) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === selectedCandidateId
+            ? {
+                ...c,
+                scorecards: c.scorecards.map((s) =>
+                  s.stage === stage
+                    ? {
+                        ...s,
+                        attachments: s.attachments.filter(
+                          (a) => a.id !== attachmentId,
+                        ),
+                      }
+                    : s,
+                ),
+              }
+            : c,
+        ),
+      );
+    },
+    [selectedCandidateId],
+  );
+
   // Pane 4 内の `useEffect` 依存安定化のため、Workspace 側でメモ化して props で渡す。
   const consumeScrollAnchor = useCallback(() => setScrollAnchor(null), []);
   const togglePane4 = useCallback(() => setPane4ManuallyClosed((v) => !v), []);
 
-  const positionTitle = "フロントエンドエンジニア";
-  const departmentTitle = "プロダクト開発";
+  // Pane 1 のエリア選択（position.id か null=すべて）。切替時は Pane 4 を畳んでおく。
+  const selectArea = useCallback((areaId: string | null) => {
+    setSelectedAreaId(areaId);
+    setSelectedDetail(null);
+    setPane4ManuallyClosed(false);
+  }, []);
+
+  // エリアごとの件数（非アーカイブの場所数）を派生計算し、Pane 1 の数字に反映する。
+  // これで Pane 1 の count は飾りではなく実データに連動する。
+  const departmentsWithCounts: Department[] = useMemo(() => {
+    const countByArea = new Map<string, number>();
+    for (const c of candidates) {
+      if (c.archived) continue;
+      countByArea.set(c.area, (countByArea.get(c.area) ?? 0) + 1);
+    }
+    return departments.map((d) => ({
+      ...d,
+      positions: d.positions.map((p) => ({
+        ...p,
+        count: countByArea.get(p.id) ?? 0,
+      })),
+    }));
+  }, [departments, candidates]);
+
+  // 選択中エリアの表示名（パンくず用）。null は「すべて」。
+  const selectedPosition =
+    selectedAreaId === null
+      ? null
+      : (departments
+          .flatMap((d) => d.positions.map((p) => ({ ...p, deptName: d.name })))
+          .find((p) => p.id === selectedAreaId) ?? null);
+  const departmentTitle = selectedPosition ? selectedPosition.deptName : "すべて";
+  const positionTitle = selectedPosition ? selectedPosition.name : "";
 
   const candidateGroups: Group[] = useMemo(() => {
+    // Pane 1 で選択中のエリアで先に絞り込む（null=すべては全件）。
+    const visible =
+      selectedAreaId === null
+        ? candidates
+        : candidates.filter((c) => c.area === selectedAreaId);
+
     // ステージグループは常に 4 段階すべて表示する。空ステージも残すことで、
     // 「最後の 1 名を別ステージへ動かしたら戻し先が消える」事故を防ぐ
     // （ADR-006 §2-2 の補足）。
@@ -368,7 +555,7 @@ export function Workspace({
       kind: "stage" as const,
       stage,
       label: STAGE_LABELS[stage],
-      items: candidates
+      items: visible
         .filter((c) => !c.archived && c.stage === stage)
         .map((c) => ({
           id: c.id,
@@ -377,7 +564,7 @@ export function Workspace({
         })),
     }));
 
-    const archivedItems = candidates
+    const archivedItems = visible
       .filter((c) => c.archived)
       .map((c) => ({
         id: c.id,
@@ -390,7 +577,7 @@ export function Workspace({
       ...stageGroups,
       { kind: "archived" as const, label: ARCHIVED_GROUP_LABEL, items: archivedItems },
     ];
-  }, [candidates]);
+  }, [candidates, selectedAreaId]);
 
   return (
     // shadcn/ui の SidebarProvider が外側を取り、Pane 1 (`<Sidebar>`) を全高で固定
@@ -405,8 +592,9 @@ export function Workspace({
     >
       <PositionPane
         workspaceName={workspace.name}
-        departments={departments}
-        selectedPositionName={positionTitle}
+        departments={departmentsWithCounts}
+        selectedAreaId={selectedAreaId}
+        onSelectArea={selectArea}
         onAddPosition={addPosition}
         onDeletePosition={deletePosition}
       />
@@ -421,37 +609,72 @@ export function Workspace({
         />
         {/* SidebarInset 自体が <main> を出すので、内側は <div> で組み、
             Pane 2 / Pane 3 / Pane 4 を横並びにする。 */}
+        {/* Pane 2 / 3 / 4 はドラッグで幅を調整できる（react-resizable-panels）。
+            Pane 4 は開いているときだけパネルとして並び、畳むと右端の細いレールになる。 */}
         <div className="flex min-h-0 flex-1">
-          <CandidateListPane
-            groups={candidateGroups}
-            selectedCandidateId={selectedCandidateId}
-            onSelectCandidate={selectCandidate}
-            onAddCandidate={addCandidate}
-            onArchiveCandidate={archiveCandidate}
-            onRestoreCandidate={restoreCandidate}
-            onMoveCandidate={moveCandidate}
-          />
-          <CandidateDashboardPane
-            profile={profile}
-            scorecards={scorecards}
-            selectedDetail={selectedDetail}
-            onOpenDetail={openDetail}
-            setProfile={setProfile}
-            applicationInfoOpen={applicationInfoOpen}
-            onApplicationInfoOpenChange={setApplicationInfoOpen}
-            selectedCandidateId={selectedCandidateId}
-          />
-          <CandidateDetailPane
-            selectedCandidateId={selectedCandidateId}
-            scorecards={scorecards}
-            selectedDetail={selectedDetail}
-            scrollAnchor={scrollAnchor}
-            onScrollAnchorConsumed={consumeScrollAnchor}
-            onUpdateAxis={updateAxisScore}
-            onUpdateScorecardField={updateScorecardField}
-            pane4Open={pane4Open}
-            onTogglePane4={togglePane4}
-          />
+          <ResizablePanelGroup
+            direction="horizontal"
+            className="min-h-0 flex-1"
+          >
+            <ResizablePanel
+              id="pane-list"
+              order={1}
+              defaultSize={24}
+              minSize={16}
+              maxSize={34}
+            >
+              <CandidateListPane
+                groups={candidateGroups}
+                selectedCandidateId={selectedCandidateId}
+                onSelectCandidate={selectCandidate}
+                onAddCandidate={addCandidate}
+                onAddCandidateWithProfile={addCandidateWithProfile}
+                onArchiveCandidate={archiveCandidate}
+                onRestoreCandidate={restoreCandidate}
+                onDeleteCandidate={deleteCandidate}
+                onMoveCandidate={moveCandidate}
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel id="pane-dashboard" order={2} minSize={30}>
+              <CandidateDashboardPane
+                profile={profile}
+                scorecards={scorecards}
+                selectedDetail={selectedDetail}
+                onOpenDetail={openDetail}
+                setProfile={setProfile}
+                applicationInfoOpen={applicationInfoOpen}
+                onApplicationInfoOpenChange={setApplicationInfoOpen}
+                selectedCandidateId={selectedCandidateId}
+              />
+            </ResizablePanel>
+            {pane4Open && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel
+                  id="pane-detail"
+                  order={3}
+                  defaultSize={32}
+                  minSize={22}
+                  maxSize={50}
+                >
+                  <CandidateDetailPane
+                    selectedCandidateId={selectedCandidateId}
+                    scorecards={scorecards}
+                    selectedDetail={selectedDetail}
+                    scrollAnchor={scrollAnchor}
+                    onScrollAnchorConsumed={consumeScrollAnchor}
+                    onUpdateAxis={updateAxisScore}
+                    onUpdateScorecardField={updateScorecardField}
+                    onAddAttachment={addAttachment}
+                    onRemoveAttachment={removeAttachment}
+                    onTogglePane4={togglePane4}
+                  />
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
+          {!pane4Open && <Pane4CollapsedRail onToggle={togglePane4} />}
         </div>
       </SidebarInset>
     </SidebarProvider>

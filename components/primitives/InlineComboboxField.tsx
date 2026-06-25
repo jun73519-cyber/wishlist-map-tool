@@ -11,7 +11,7 @@
  *   - トリガーの chrome は他フィールドと統一（border-input + bg-card）
  *   - 選択中アイテムは `data-checked` で shadcn 標準の CheckIcon を表示
  *
- * 雛形では「応募経路」（Wantedly / LinkedIn / 社員リファラル / 直接応募 / etc.）で再利用。
+ * 雛形では「情報源」（Instagram / YouTube / 旅行雑誌 / 友人のおすすめ / etc.）で再利用。
  * オプション集合は外部 state で管理し、`onCreate` を経由して追加する。
  */
 

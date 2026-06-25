@@ -11,15 +11,12 @@ import {
 
 const baseScorecard = (over: Partial<Scorecard>): Scorecard => ({
   stage: "screening",
-  label: "書類選考",
+  label: "気になる",
   date: "",
   format: "",
   interviewer: "",
   axisScores: {
-    achievements: null,
-    thinkingAbility: null,
-    communication: null,
-    cultureFit: null,
+    wishLevel: null,
   },
   attachments: [],
   ...over,
@@ -29,32 +26,15 @@ describe("calculateAverageScore", () => {
   it("全フィールドが null なら null", () => {
     expect(
       calculateAverageScore({
-        achievements: null,
-        thinkingAbility: null,
-        communication: null,
-        cultureFit: null,
+        wishLevel: null,
       }),
     ).toBeNull();
   });
 
-  it("一部 null は除外して平均", () => {
+  it("値が入っていればその値を返す", () => {
     expect(
       calculateAverageScore({
-        achievements: 4,
-        thinkingAbility: 3,
-        communication: null,
-        cultureFit: null,
-      }),
-    ).toBe(3.5);
-  });
-
-  it("4 軸全部入っていれば単純平均", () => {
-    expect(
-      calculateAverageScore({
-        achievements: 5,
-        thinkingAbility: 4,
-        communication: 3,
-        cultureFit: 4,
+        wishLevel: 4,
       }),
     ).toBe(4);
   });
@@ -69,14 +49,14 @@ describe("getLatestDoneScorecard", () => {
     expect(getLatestDoneScorecard(cards)).toBeUndefined();
   });
 
-  it("配列末尾に近い done を返す（選考フローで最も進んだ評価）", () => {
+  it("配列末尾に近い done を返す（検討フローで最も進んだ評価）", () => {
     const cards = [
       baseScorecard({
         stage: "screening",
         date: "2026-04-01",
-        decision: "通過",
+        decision: "行きたい",
       }),
-      baseScorecard({ stage: "first", date: "2026-04-10", decision: "通過" }),
+      baseScorecard({ stage: "first", date: "2026-04-10", decision: "行きたい" }),
       baseScorecard({ stage: "second", date: "2026-04-20" }),
     ];
     const latest = getLatestDoneScorecard(cards);
@@ -104,6 +84,7 @@ describe("getCandidateAverageScore / getScorecardsAverageScore", () => {
       },
       scorecards: [],
       stage: "screening",
+      area: "",
       archived: false,
     };
     expect(getCandidateAverageScore(candidate)).toBeNull();
@@ -114,22 +95,16 @@ describe("getCandidateAverageScore / getScorecardsAverageScore", () => {
     const cards = [
       baseScorecard({
         stage: "screening",
-        decision: "通過",
+        decision: "行きたい",
         axisScores: {
-          achievements: 5,
-          thinkingAbility: 5,
-          communication: 5,
-          cultureFit: 5,
+          wishLevel: 5,
         },
       }),
       baseScorecard({
         stage: "first",
-        decision: "通過",
+        decision: "行きたい",
         axisScores: {
-          achievements: 3,
-          thinkingAbility: 3,
-          communication: 3,
-          cultureFit: 3,
+          wishLevel: 3,
         },
       }),
     ];
@@ -142,13 +117,13 @@ describe("getCommentedScorecards", () => {
     const cards = [
       baseScorecard({
         stage: "first",
-        decision: "通過",
+        decision: "行きたい",
         comment: "前向き",
       }),
       baseScorecard({
         stage: "screening",
-        decision: "通過",
-        comment: "書類良好",
+        decision: "行きたい",
+        comment: "下調べ済み",
       }),
       baseScorecard({
         stage: "second",

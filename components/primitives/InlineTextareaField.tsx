@@ -10,7 +10,7 @@
  *   - 保存: blur で onSave 発火（値が変わっていれば）。Cmd+Enter で blur
  *   - キャンセル: Esc で defaultValue に戻して blur
  *
- * 雛形では「職務経歴」「志望動機」のような長文項目で再利用。
+ * 雛形では「アクセス・見どころ」「行きたい理由」のような長文項目で再利用。
  */
 
 import { Textarea } from "@/components/ui/textarea";
@@ -33,7 +33,10 @@ export function InlineTextareaField({
   placeholder,
 }: InlineTextareaFieldProps) {
   return (
+    // `key={value}` で「保存済みの値」が変わったら textarea を作り直す（非制御の
+    // default を初期化後に変えない）。詳細は InlineTextField の同じコメントを参照。
     <Textarea
+      key={value}
       defaultValue={value}
       placeholder={placeholder ?? "未設定"}
       aria-label={ariaLabel}

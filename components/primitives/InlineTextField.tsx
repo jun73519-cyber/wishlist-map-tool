@@ -10,7 +10,7 @@
  *   - キャンセル: Esc で defaultValue に戻して blur
  *
  * ADR-0014 で旧 ADR-0010 §6 D R5「shadcn Input MUST 禁止」を撤回。
- * 雛形では候補者の「氏名・採用担当・連絡先・希望年収（min/max）」等で再利用。
+ * 雛形では場所の「場所名・同行者・連絡先・予算（min/max）」等で再利用。
  */
 
 import { Input } from "@/components/ui/input";
@@ -23,8 +23,8 @@ export type InlineTextFieldProps = {
   onSave: (v: string) => void;
   /** スクリーンリーダー向けラベル */
   ariaLabel: string;
-  /** input の type 属性（`text` / `email` / `tel` / `number`） */
-  inputType?: "text" | "email" | "tel" | "number";
+  /** input の type 属性（`text` / `email` / `tel` / `number` / `url`） */
+  inputType?: "text" | "email" | "tel" | "number" | "url";
   /** 空のときの placeholder。デフォルト "未設定" */
   placeholder?: string;
   /** className override（width 制限などに使う） */
@@ -40,7 +40,13 @@ export function InlineTextField({
   className,
 }: InlineTextFieldProps) {
   return (
+    // `key={value}` で「保存済みの値」が変わったら input を作り直す。
+    // 非制御（defaultValue）のため、これが無いと値が外から変わったとき Base UI が
+    // 「uncontrolled FieldControl の default が初期化後に変わった」と警告する
+    // （React 公式の「非制御コンポーネントは key でリセットする」パターン）。
+    // 入力中はこの `value` prop は変わらないので、打鍵ごとの再マウントは起きない。
     <Input
+      key={value}
       type={inputType}
       defaultValue={value}
       placeholder={placeholder ?? "未設定"}

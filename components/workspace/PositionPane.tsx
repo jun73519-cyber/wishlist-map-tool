@@ -31,7 +31,8 @@ import { AddItemDialog } from "@/components/workspace/AddItemDialog";
 type PositionPaneProps = {
   workspaceName: string;
   departments: Department[];
-  selectedPositionName?: string;
+  selectedAreaId: string | null;
+  onSelectArea: (areaId: string | null) => void;
   onAddPosition: (deptId: string, posName: string) => void;
   onDeletePosition: (deptId: string, posId: string) => void;
 };
@@ -39,7 +40,8 @@ type PositionPaneProps = {
 export function PositionPane({
   workspaceName,
   departments,
-  selectedPositionName,
+  selectedAreaId,
+  onSelectArea,
   onAddPosition,
   onDeletePosition,
 }: PositionPaneProps) {
@@ -68,29 +70,47 @@ export function PositionPane({
         </SidebarHeader>
 
         <SidebarContent className="px-1 py-3 group-data-[collapsible=icon]:hidden">
+          {/* 「すべて」= エリア絞り込みなしの全件表示 */}
+          <SidebarGroup className="px-1">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="すべての場所"
+                    isActive={selectedAreaId === null}
+                    aria-current={selectedAreaId === null ? "page" : undefined}
+                    onClick={() => onSelectArea(null)}
+                  >
+                    <span className="truncate">すべて</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
           {departments.map((dept) => (
             <SidebarGroup key={dept.id} className="px-1">
               <SidebarGroupLabel className="px-2 text-xs font-semibold tracking-wide text-sidebar-foreground/70 uppercase">
                 {dept.name}
               </SidebarGroupLabel>
               <SidebarGroupAction
-                title={`${dept.name} にポジションを追加`}
+                title={`${dept.name} にエリアを追加`}
                 onClick={() => setAddDialogDeptId(dept.id)}
                 className="w-6 rounded-[min(var(--radius-md),10px)] text-muted-foreground hover:bg-muted hover:text-foreground [&>svg]:size-3"
               >
                 <Plus />
-                <span className="sr-only">{dept.name} にポジションを追加</span>
+                <span className="sr-only">{dept.name} にエリアを追加</span>
               </SidebarGroupAction>
               <SidebarGroupContent>
                 <SidebarMenu>
                   {dept.positions.map((pos) => {
-                    const active = pos.name === selectedPositionName;
+                    const active = pos.id === selectedAreaId;
                     return (
                       <SidebarMenuItem key={pos.id}>
                         <SidebarMenuButton
                           tooltip={pos.name}
                           isActive={active}
                           aria-current={active ? "page" : undefined}
+                          onClick={() => onSelectArea(pos.id)}
                         >
                           <span className="truncate">{pos.name}</span>
                           <span className="ml-auto text-xs text-muted-foreground tabular-nums">
@@ -110,7 +130,7 @@ export function PositionPane({
                             <DropdownMenuGroup>
                               <DropdownMenuItem
                                 variant="destructive"
-                                onSelect={() =>
+                                onClick={() =>
                                   setDeleteTarget({
                                     deptId: dept.id,
                                     posId: pos.id,
@@ -140,11 +160,11 @@ export function PositionPane({
           onOpenChange={(open) => {
             if (!open) setAddDialogDeptId(null);
           }}
-          title="ポジションを追加"
-          description={`${addDialogDept.name} に新しいポジションを追加します`}
-          fieldLabel="ポジション名"
-          fieldId="pos-name"
-          placeholder="例: データエンジニア"
+          title="エリアを追加"
+          description={`${addDialogDept.name} に新しいエリアを追加します`}
+          fieldLabel="エリア名"
+          fieldId="area-name"
+          placeholder="例: 四国"
           onAdd={(name) => onAddPosition(addDialogDept.id, name)}
         />
       )}
@@ -154,7 +174,7 @@ export function PositionPane({
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title="ポジションを削除しますか？"
+        title="エリアを削除しますか？"
         itemName={deleteTarget?.posName ?? ""}
         onConfirm={() => {
           if (deleteTarget) {

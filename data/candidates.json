@@ -1,246 +1,453 @@
 [
   {
     "id": "c1",
+    "area": "p-kyushu",
     "profile": {
-      "name": "田中 太郎",
+      "name": "屋久島・縄文杉トレッキング",
       "birthday": "",
-      "source": "",
-      "email": "",
+      "source": "ドキュメンタリー番組",
+      "email": "https://yakushima-info.com/",
       "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
+      "address": "鹿児島県熊毛郡屋久島町",
+      "recruiter": "ひとり旅",
+      "desiredSalaryMin": "8",
+      "desiredSalaryMax": "12",
       "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
-    },
-    "scorecards": [],
-    "stage": "screening"
-  },
-  {
-    "id": "c2",
-    "profile": {
-      "name": "佐藤 花子",
-      "birthday": "1995-08-12",
-      "source": "社員リファラル",
-      "email": "hanako.sato@example.com",
-      "phone": "090-XXXX-XXXX",
-      "address": "東京都目黒区",
-      "recruiter": "山田 リクルーター",
-      "desiredSalaryMin": "600",
-      "desiredSalaryMax": "700",
-      "availableStartDate": "2026-07-01",
-      "careerText": "2022-04 〜 現在  株式会社 ABC  シニアフロントエンドエンジニア\n  toB SaaS のフロントエンド設計・実装・レビューをリード。デザインシステムの整備に携わる。\n2019-04 〜 2022-03  株式会社 XYZ  フロントエンドエンジニア\n  React + TypeScript の SPA 立ち上げ、GraphQL クライアントの導入、CI/CD の整備。\n2017-04 〜 2019-03  株式会社 LMN  Web エンジニア\n  社内向け業務システムの開発。最後の半年は新卒の OJT も担当。",
-      "motivationFull": "プロダクトの方向性を技術側から提案できる環境を求めています。御社の「現場の課題から逆算してプロダクトを作る」というスタイルに強く共感し、自分の強みであるフロントエンド設計と顧客理解の両方を活かせる場と考えました。直近 3 年で関わってきた toB SaaS の経験を踏まえ、初期フェーズのプロダクトでも、UI とドメインの両軸でチームに貢献できると考えています。"
+      "careerText": "鹿児島港からフェリー／高速船、または屋久島空港へ。\n縄文杉までは荒川登山口から往復約10時間（22km）。日帰りはかなりハード、ヘッドランプ必須。\n苔むした白谷雲水峡（もののけ姫の森のモデル）は半日コースで気軽に楽しめる。",
+      "motivationFull": "樹齢数千年といわれる縄文杉を、自分の足で会いに行きたい。雨が多い島の、苔と原生林に覆われた『生きている森』の空気を体験したい。体力に自信をつけてから挑みたい憧れの場所。"
     },
     "scorecards": [
       {
         "stage": "screening",
-        "label": "書類選考",
-        "date": "2026-04-28",
-        "format": "書類審査",
-        "interviewer": "佐藤 マネージャー",
-        "decision": "通過",
-        "comment": "経験が要件にマッチしている。toB SaaS の知見と、デザインシステムの整備経験が特に魅力。一次面接で技術深掘りを行いたい。",
-        "summary": "応募書類より、6 年の実務経験のうち直近 3 年で React + TypeScript を中心に設計・レビューをリードしている。GraphQL / Next.js の経験あり。リーダーシップは OJT 寄り。",
-        "axisScores": {
-          "achievements": 4,
-          "thinkingAbility": null,
-          "communication": null,
-          "cultureFit": null
-        },
-        "attachments": [
-          {
-            "id": "att-c2-screening-cv",
-            "kind": "pdf",
-            "name": "職務経歴書.pdf",
-            "size": "120 KB"
-          },
-          {
-            "id": "att-c2-screening-resume",
-            "kind": "pdf",
-            "name": "履歴書.pdf",
-            "size": "84 KB"
-          },
-          {
-            "id": "att-c2-screening-portfolio",
-            "kind": "pdf",
-            "name": "ポートフォリオ.pdf",
-            "size": "2.1 MB"
-          }
-        ]
+        "label": "気になる",
+        "date": "2026-05-12",
+        "format": "飛行機",
+        "interviewer": "ひとり旅",
+        "comment": "まずは白谷雲水峡だけの軽めプランから始めて、いずれ縄文杉に挑戦したい。",
+        "summary": "屋久島の原生林トレッキング。縄文杉は往復10時間級、白谷雲水峡は半日で楽しめる。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": []
+      }
+    ],
+    "stage": "screening"
+  },
+  {
+    "id": "c2",
+    "area": "p-asia",
+    "profile": {
+      "name": "香港・ビクトリアピークと裏路地グルメ",
+      "birthday": "",
+      "source": "映画",
+      "email": "https://www.thepeak.com.hk/",
+      "phone": "+852-2522-0922",
+      "address": "香港 ビクトリアピーク（太平山）",
+      "recruiter": "友人（2人）",
+      "desiredSalaryMin": "12",
+      "desiredSalaryMax": "18",
+      "availableStartDate": "2026-03-14",
+      "careerText": "ピークトラム（109年の歴史ある登山電車）で山頂へ。夕方に登ると、日没→100万ドルの夜景の移り変わりが一度に見られる。\n下町は深水埗（シャムスイポー）の屋台と茶餐廳（チャーチャンテン）でミルクティーとエッグタルト。\nスターフェリーで九龍↔香港島の海上夜景も外せない。",
+      "motivationFull": "摩天楼が斜面を埋め尽くす香港の夜景を、ピークから一度この目で見たかった。高層ビルの足元に広がる猥雑で活気ある裏路地のギャップが好きで、食べ歩きと夜景の両方を一気に味わいたい。"
+    },
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2025-11-20",
+        "format": "飛行機",
+        "interviewer": "友人（2人）",
+        "decision": "行きたい",
+        "comment": "映画のワンシーンで見たピークの夜景に一目惚れ。次の海外旅行の本命に。",
+        "summary": "香港島のシンボル、ビクトリアピークからの夜景と、下町グルメが二大目的。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": []
       },
       {
         "stage": "first",
-        "label": "一次面接",
-        "date": "2026-05-05",
-        "format": "オンライン (Google Meet)",
-        "interviewer": "田中 部長",
-        "decision": "通過",
-        "comment": "コミュ力が高く、質問に対して具体例を交えて答えていた。技術的な深掘りでも自分の判断軸を持って答えており、シニアとして期待できる。",
-        "summary": "自己紹介で 6 年の toB SaaS 経験を強調。技術選定では「チームの学習曲線」を最優先する判断軸を持つ。リーダーシップ経験は OJT 寄りで、フォーマルなマネジメントは未経験。",
-        "axisScores": {
-          "achievements": 5,
-          "thinkingAbility": 4,
-          "communication": 4,
-          "cultureFit": 4
-        },
+        "label": "計画中",
+        "date": "2026-01-15",
+        "format": "飛行機",
+        "interviewer": "友人（2人）",
+        "decision": "行きたい",
+        "comment": "3泊4日。1日目夕方にピーク、2日目は深水埗とスターフェリー、3日目は離島（南丫島）も検討。",
+        "summary": "弾丸でなく3泊にして、夜景・グルメ・離島をゆったり回るプランに。",
+        "axisScores": { "wishLevel": 5 },
         "attachments": [
           {
-            "id": "att-c2-first-transcript",
+            "id": "att-c2-first-plan",
             "kind": "txt",
-            "name": "一次面接 文字起こし.txt",
-            "size": "8 KB",
-            "previewText": "[14:00:12] 田中: 本日はお時間ありがとうございます。\n[14:00:35] 佐藤: こちらこそ、よろしくお願いします。\n[14:01:08] 田中: それでは早速、自己紹介からお願いできますか。\n[14:01:24] 佐藤: はい。直近 6 年は toB SaaS のフロントエンド開発を中心にやってきました…\n[14:08:40] 田中: 技術選定で迷ったとき、何を一番大事にしますか。\n[14:09:02] 佐藤: チームの学習曲線です。新しい技術が良くても、チームが追いつけないなら採らない…"
+            "name": "香港3泊プラン.txt",
+            "size": "3 KB",
+            "previewText": "Day1 夕方 ビクトリアピーク（日没ねらい）\nDay2 深水埗 屋台 → スターフェリー夜景\nDay3 南丫島 で海鮮ランチ\nDay4 おみやげ＆帰国"
           }
         ]
       },
       {
         "stage": "second",
-        "label": "二次面接",
-        "date": "2026-05-12",
-        "format": "オンライン (Google Meet)",
-        "interviewer": "担当者未定",
-        "axisScores": {
-          "achievements": null,
-          "thinkingAbility": null,
-          "communication": null,
-          "cultureFit": null
-        },
-        "attachments": []
+        "label": "予約済",
+        "date": "2026-02-10",
+        "format": "飛行機",
+        "interviewer": "友人（2人）",
+        "decision": "行きたい",
+        "comment": "航空券と中環（セントラル）のホテルを予約済み。ピークトラムは事前WEBチケットで行列回避。",
+        "summary": "宿は中環エリアに3泊。移動はオクトパスカード（ICカード）を空港で確保予定。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": [
+          {
+            "id": "att-c2-second-booking",
+            "kind": "pdf",
+            "name": "航空券・ホテル予約確認.pdf",
+            "size": "104 KB"
+          }
+        ]
       },
       {
         "stage": "final",
-        "label": "最終面接",
-        "date": "",
-        "format": "未定",
-        "interviewer": "担当者未定",
-        "axisScores": {
-          "achievements": null,
-          "thinkingAbility": null,
-          "communication": null,
-          "cultureFit": null
-        },
+        "label": "訪問済",
+        "date": "2026-03-14",
+        "format": "飛行機",
+        "interviewer": "友人（2人）",
+        "decision": "行きたい",
+        "comment": "夕方ピーク作戦が大成功。日が落ちて街に灯がともる瞬間は鳥肌もの。翌日の深水埗の屋台メシも最高で、また絶対に来たい。",
+        "summary": "ピークは日没30分前着がベスト。深水埗で食べ歩き、スターフェリーから見上げる夜景も格別だった。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": [
+          {
+            "id": "att-c2-final-memo",
+            "kind": "txt",
+            "name": "旅の記録.txt",
+            "size": "2 KB",
+            "previewText": "・ピークは日没30分前に到着が正解\n・ピークトラムは事前チケットで並ばず乗れた\n・深水埗のミルクティーとエッグタルトが絶品\n・次は離島の南丫島でゆっくりしたい"
+          }
+        ]
+      }
+    ],
+    "stage": "final"
+  },
+  {
+    "id": "c3",
+    "area": "p-tohoku",
+    "profile": {
+      "name": "奥入瀬渓流と十和田湖の紅葉",
+      "birthday": "",
+      "source": "旅行雑誌",
+      "email": "https://towadako.or.jp/",
+      "phone": "",
+      "address": "青森県十和田市",
+      "recruiter": "家族（3人）",
+      "desiredSalaryMin": "5",
+      "desiredSalaryMax": "8",
+      "availableStartDate": "2026-10-18",
+      "careerText": "新青森駅／八戸駅からバスで奥入瀬渓流へ。\n渓流沿いの遊歩道は約14km。子ノ口〜石ヶ戸の区間が見どころ集中。レンタサイクルも便利。\n紅葉のピークは例年10月中旬〜下旬。",
+      "motivationFull": "渓流に沿って続く滝と苔と紅葉のトンネルを、のんびり歩きたい。水の流れる音だけが聞こえる森の中を、写真を撮りながら半日かけて散歩したい。"
+    },
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-04-05",
+        "format": "電車",
+        "interviewer": "家族（3人）",
+        "decision": "行きたい",
+        "comment": "紅葉の時期がピンポイントなので、今年の10月に照準を合わせたい。",
+        "summary": "奥入瀬渓流の紅葉散歩と十和田湖。ベストシーズンは10月中〜下旬。",
+        "axisScores": { "wishLevel": 4 },
+        "attachments": []
+      },
+      {
+        "stage": "first",
+        "label": "計画中",
+        "date": "2026-06-01",
+        "format": "電車",
+        "interviewer": "家族（3人）",
+        "comment": "紅葉ピークは混むので宿を早めに押さえたい。渓流は歩き＋一部レンタサイクルで。",
+        "axisScores": { "wishLevel": 4 },
         "attachments": []
       }
     ],
     "stage": "first"
   },
   {
-    "id": "c3",
-    "profile": {
-      "name": "山田 次郎",
-      "birthday": "",
-      "source": "",
-      "email": "",
-      "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
-      "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
-    },
-    "scorecards": [],
-    "stage": "screening"
-  },
-  {
     "id": "c4",
+    "area": "p-chubu",
     "profile": {
-      "name": "鈴木 一郎",
+      "name": "金沢・兼六園と21世紀美術館",
       "birthday": "",
-      "source": "",
-      "email": "",
+      "source": "友人のおすすめ",
+      "email": "https://www.kanazawa21.jp/",
       "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
-      "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
+      "address": "石川県金沢市",
+      "recruiter": "パートナー",
+      "desiredSalaryMin": "4",
+      "desiredSalaryMax": "6",
+      "availableStartDate": "2026-07-23",
+      "careerText": "北陸新幹線で金沢駅まで。市内は周遊バスが便利。\n兼六園・金沢21世紀美術館・近江町市場・ひがし茶屋街が徒歩〜バス圏に集まる。\n21世紀美術館の『スイミング・プール』は事前予約推奨。",
+      "motivationFull": "日本三名園の兼六園と、ガラス張りの現代美術館を一度に楽しみたい。金沢らしい和の庭園と、レアンドロのプール作品のコントラストを体験して、近江町市場で海鮮丼も食べたい。"
     },
-    "scorecards": [],
-    "stage": "first"
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-03-30",
+        "format": "電車",
+        "interviewer": "パートナー",
+        "decision": "行きたい",
+        "comment": "新幹線で行きやすいので週末2日で行けそう。",
+        "summary": "庭園・現代アート・市場グルメが徒歩圏にまとまった金沢の王道コース。",
+        "axisScores": { "wishLevel": 4 },
+        "attachments": []
+      },
+      {
+        "stage": "first",
+        "label": "計画中",
+        "date": "2026-05-20",
+        "format": "電車",
+        "interviewer": "パートナー",
+        "decision": "行きたい",
+        "comment": "21世紀美術館のプール作品は予約枠が埋まりやすいので先に確保する。",
+        "axisScores": { "wishLevel": 4 },
+        "attachments": []
+      },
+      {
+        "stage": "second",
+        "label": "予約済",
+        "date": "2026-07-23",
+        "format": "電車",
+        "interviewer": "パートナー",
+        "comment": "新幹線とひがし茶屋街近くの宿を予約。美術館チケットも確保済み。",
+        "axisScores": { "wishLevel": 4 },
+        "attachments": [
+          {
+            "id": "att-c4-second-ticket",
+            "kind": "pdf",
+            "name": "美術館チケット.pdf",
+            "size": "62 KB"
+          }
+        ]
+      }
+    ],
+    "stage": "second"
   },
   {
     "id": "c5",
+    "area": "p-europe",
     "profile": {
-      "name": "高橋 美咲",
+      "name": "アイスランド・オーロラと氷河湖",
       "birthday": "",
-      "source": "",
-      "email": "",
+      "source": "写真集",
+      "email": "https://www.icelandtravel.is/",
       "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
+      "address": "アイスランド ヨークルスアゥルロゥン氷河湖",
+      "recruiter": "ひとり旅",
+      "desiredSalaryMin": "35",
+      "desiredSalaryMax": "50",
       "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
+      "careerText": "ケプラヴィーク空港からレンタカーで国道1号（リングロード）を周遊。\nオーロラは9〜3月の晴れた夜が狙い目。ヨークルスアゥルロゥン氷河湖とダイヤモンドビーチは南東部。\n冬道の運転は要注意、4WD推奨。",
+      "motivationFull": "氷河が崩れて流氷になった湖と、黒い砂浜に氷が宝石のように散らばるダイヤモンドビーチを見てみたい。そして晴れた夜に、空一面に揺れるオーロラを自分の目で見るのが長年の夢。"
     },
-    "scorecards": [],
-    "stage": "first"
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-02-08",
+        "format": "飛行機",
+        "interviewer": "ひとり旅",
+        "comment": "予算と日数が大きいので、いつかの大型連休でじっくり。冬に行くのが条件。",
+        "summary": "オーロラ・氷河湖・ダイヤモンドビーチが目的。ベストは冬の晴天夜。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": []
+      }
+    ],
+    "stage": "screening"
   },
   {
     "id": "c6",
+    "area": "p-americas",
     "profile": {
-      "name": "渡辺 健太",
+      "name": "ペルー・マチュピチュ",
       "birthday": "",
-      "source": "",
-      "email": "",
+      "source": "世界遺産番組",
+      "email": "https://www.machupicchu.gob.pe/",
       "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
+      "address": "ペルー クスコ県 マチュピチュ",
+      "recruiter": "友人（2人）",
+      "desiredSalaryMin": "40",
+      "desiredSalaryMax": "60",
       "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
+      "careerText": "クスコまで空路、そこから列車でアグアス・カリエンテスへ、さらにバスで遺跡入口。\n入場は時間指定＆人数制限。ワイナピチュ登頂は別途予約枠。\n高山病対策でクスコで数日の高地順応がおすすめ。乾季（5〜9月）が安定。",
+      "motivationFull": "雲の上に浮かぶ天空都市を、一度はこの目で見たい。インカの石組みと、背後にそびえるワイナピチュの絶景の中に立ってみたい。人生で一度の大旅行として、しっかり準備して行きたい場所。"
     },
-    "scorecards": [],
-    "stage": "final"
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-01-25",
+        "format": "飛行機",
+        "interviewer": "友人（2人）",
+        "decision": "行きたい",
+        "comment": "高地順応と入場予約が肝。乾季の5〜9月で計画を組みたい。",
+        "summary": "天空都市マチュピチュ。入場制限・高山病対策・乾季ねらいが計画の要。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": []
+      },
+      {
+        "stage": "first",
+        "label": "計画中",
+        "date": "2026-04-12",
+        "format": "飛行機",
+        "interviewer": "友人（2人）",
+        "comment": "クスコで2泊して高地順応→列車で移動の行程を検討中。ワイナピチュ登頂枠も狙う。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": []
+      }
+    ],
+    "stage": "first"
   },
   {
     "id": "c7",
+    "area": "p-oceania",
     "profile": {
-      "name": "中村 聡",
+      "name": "ニュージーランド・テカポ湖の星空",
       "birthday": "",
-      "source": "",
-      "email": "",
+      "source": "Instagram",
+      "email": "https://www.newzealand.com/",
       "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
+      "address": "ニュージーランド 南島 テカポ湖",
+      "recruiter": "パートナー",
+      "desiredSalaryMin": "30",
+      "desiredSalaryMax": "45",
       "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
+      "careerText": "クライストチャーチからレンタカーで約3時間。\n世界で初めて星空が世界遺産級に保護された『星空保護区』。善き羊飼いの教会と満天の星のコラボが定番。\nルピナスの花が咲く11〜12月も美しい。",
+      "motivationFull": "光害から守られた、降ってきそうなほどの満天の星と天の川を見たい。湖畔の小さな教会越しに広がる星空を眺めながら、静かな夜を過ごすのが理想。"
     },
-    "scorecards": [],
-    "stage": "first",
-    "archived": true
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-03-02",
+        "format": "飛行機",
+        "interviewer": "パートナー",
+        "comment": "南半球なので時期は要検討。ルピナスの咲く初夏とどちらにするか悩み中。",
+        "summary": "星空保護区テカポ湖。教会×天の川の写真が目的。新月の晴天夜がベスト。",
+        "axisScores": { "wishLevel": 4 },
+        "attachments": []
+      }
+    ],
+    "stage": "screening"
   },
   {
     "id": "c8",
+    "area": "p-oceania",
     "profile": {
-      "name": "小林 結衣",
+      "name": "ドバイ・ブルジュ・ハリファ",
       "birthday": "",
-      "source": "",
-      "email": "",
+      "source": "テレビ",
+      "email": "https://www.burjkhalifa.ae/",
       "phone": "",
-      "address": "",
-      "recruiter": "",
-      "desiredSalaryMin": "",
-      "desiredSalaryMax": "",
+      "address": "アラブ首長国連邦 ドバイ",
+      "recruiter": "—",
+      "desiredSalaryMin": "25",
+      "desiredSalaryMax": "35",
       "availableStartDate": "",
-      "careerText": "",
-      "motivationFull": ""
+      "careerText": "世界一高い超高層ビル（828m）。展望台は事前予約推奨。\n夏（6〜9月）は猛暑で屋外がつらい。ベストは11〜3月。",
+      "motivationFull": "世界一の高さからの眺めと噴水ショーには惹かれるけれど、今は他の自然系の場所を優先したい気分。"
     },
-    "scorecards": [],
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-02-20",
+        "format": "飛行機",
+        "interviewer": "—",
+        "decision": "見送り",
+        "comment": "魅力的だけど、予算と夏の猛暑、そして今は自然系を優先したい気分で一旦保留。",
+        "summary": "世界一高いビルからの眺めが目的。ベストは冬。今回は優先度を下げて見送り。",
+        "axisScores": { "wishLevel": 2 },
+        "attachments": []
+      }
+    ],
     "stage": "screening",
     "archived": true
+  },
+  {
+    "id": "c9",
+    "area": "p-africa",
+    "profile": {
+      "name": "アフリカ縦断（ビクトリアの滝〜喜望峰）",
+      "birthday": "",
+      "source": "YouTube",
+      "email": "https://youtu.be/uXozwzUcQ6I",
+      "phone": "",
+      "address": "ザンビア／ジンバブエ・南アフリカ",
+      "recruiter": "",
+      "desiredSalaryMin": "50",
+      "desiredSalaryMax": "80",
+      "availableStartDate": "",
+      "careerText": "前半: ビクトリアの滝（ザンビア／ジンバブエ国境）。世界三大瀑布のひとつで、乾季の満水期は水煙が立ちのぼる。ヘリ遊覧やザンベジ川のサンセットクルーズも。\n後半: 南アフリカ・ケープタウンへ大移動。テーブルマウンテン、喜望峰（Cape of Good Hope）、ボルダーズビーチの野生ペンギン。\n途中でサファリ（クルーガー国立公園など）を挟むと『地球の野生』を体感できる。\n移動が長いので2週間前後の長期休暇向き。",
+      "motivationFull": "小田切ヒロさんのアフリカVlogを見て、魂が揺さぶられた。轟音をあげるビクトリアの滝の水煙と、大陸の南の果て・喜望峰に立つこと、そして手つかずの野生のエナジーを全身で浴びる旅を、人生で一度は体験したい。"
+    },
+    "scorecards": [
+      {
+        "stage": "screening",
+        "label": "気になる",
+        "date": "2026-06-22",
+        "format": "飛行機",
+        "interviewer": "",
+        "decision": "行きたい",
+        "comment": "小田切ヒロさんのVlogがきっかけ。ビクトリアの滝→喜望峰の大移動ルートに憧れる。まずは2週間の休みが取れる時期を探すところから。",
+        "summary": "ビクトリアの滝と南アフリカ・喜望峰を結ぶアフリカ縦断の旅。サファリも組み込みたい長期旅行。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": [
+          {
+            "id": "att-c9-screening-ref",
+            "kind": "txt",
+            "name": "参考Vlogメモ.txt",
+            "size": "1 KB",
+            "previewText": "・参考Vlog: https://youtu.be/uXozwzUcQ6I （小田切ヒロ アフリカVlog）\n・前半 ビクトリアの滝（乾季の満水期がねらい目）\n・後半 ケープタウン → 喜望峰 → ペンギンビーチ\n・サファリ（クルーガー等）も挟みたい\n・2週間前後の長期休暇が必要"
+          }
+        ]
+      }
+    ],
+    "stage": "screening"
+  },
+  {
+    "id": "tour-italy-2024",
+    "area": "p-europe",
+    "profile": {
+      "name": "南イタリア・シチリア島 周遊（2024）",
+      "birthday": "",
+      "source": "ツアー（加藤ジュンコ同行）",
+      "email": "",
+      "phone": "",
+      "address": "イタリア（ローマ／ナポリ／カプリ島／アマルフィー海岸／タオルミーナ）",
+      "recruiter": "ツアー一行",
+      "desiredSalaryMin": "50",
+      "desiredSalaryMax": "70",
+      "availableStartDate": "2024-10-06",
+      "careerText": "9日間でローマ〜ナポリ〜カプリ島〜アマルフィー海岸〜シチリア島タオルミーナを周遊。\nローマ（バチカン／コロッセオ）、ナポリ近郊のポンペイ遺跡、カプリ島の青の洞窟、ソレント〜アマルフィー海岸〜ラヴェッロの絶景ドライブ、シチリアのタオルミーナ（ギリシャ劇場・4月9日広場）、エトナ山麓のワイナリー「ニコシア」など見どころ満載。\n移動: ITAエアウェイズ直行便。サレルノ〜メッシーナは特急インターシティ（約4時間）。",
+      "motivationFull": "カンツォーネナイト、青の洞窟、アマルフィー海岸の絶景、エトナ山のワイナリーまで、南イタリアとシチリアの魅力を9日間で満喫した忘れられない旅。"
+    },
+    "scorecards": [
+      {
+        "stage": "final",
+        "label": "訪問済",
+        "date": "2024-10-06",
+        "format": "飛行機",
+        "interviewer": "ツアー一行",
+        "decision": "行きたい",
+        "comment": "ローマからシチリアまで9日間の周遊。青の洞窟、アマルフィー海岸、エトナ山のワイナリーが特に印象的だった。また行きたい。",
+        "summary": "10/6羽田発〜10/14羽田着。ローマ・ナポリ・カプリ島・アマルフィー海岸・タオルミーナ・カターニャを巡るツアー。",
+        "axisScores": { "wishLevel": 5 },
+        "attachments": [
+          {
+            "id": "att-italy-2024-memo",
+            "kind": "txt",
+            "name": "旅程メモ.txt",
+            "size": "2 KB",
+            "previewText": "Day1 10/6 羽田→ローマ（ITA AZ-793）\nDay2 10/7 ローマ（バチカン/コロッセオ）→ナポリ（カンツォーネナイト）\nDay3 10/8 ポンペイ観光→カプリ島\nDay4 10/9 カプリ島（青の洞窟・アナカプリ）\nDay5 10/10 ソレント→アマルフィー海岸→ラヴェッロ→サレルノ\nDay6 10/11 サレルノ→メッシーナ（特急4h）→タオルミーナ\nDay7 10/12 エトナ山ワイナリー（ニコシア）→カターニャ\nDay8-9 10/13-14 カターニャ→ローマ→羽田"
+          }
+        ]
+      }
+    ],
+    "stage": "final"
   }
 ]

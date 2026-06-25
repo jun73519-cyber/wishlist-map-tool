@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "採用管理ワークスペース",
-  description: "tweakcn テーマ + 日本語タイポ検証用プロトタイプ",
+  title: "行きたい場所マップ帳",
+  description: "行きたい場所を集めて、検討から訪問まで記録するマップ帳",
 };
 
 export const viewport: Viewport = {

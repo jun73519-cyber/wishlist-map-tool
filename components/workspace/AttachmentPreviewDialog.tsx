@@ -1,17 +1,12 @@
 "use client";
 
 /**
- * 添付ファイル中身プレビューモーダル（Pane 4 モード 2 / AttachmentList から開く）。
+ * 添付の中身プレビューモーダル（AttachmentList から開く）。
  *
- * - shadcn Dialog 公式構造（Title / Description / Header / ScrollArea）に揃える
- * - WAI-ARIA Modal Dialog Pattern: aria-labelledby（Title 自動接続）+ aria-describedby
- *   （Description 自動接続）+ Esc 閉じ + focus 戻し（Base UI Dialog で標準提供）
- * - txt は本文を whitespace-pre-wrap で表示。font-mono は使わず、日本語長文の
- *   可読性を優先（ADR-0010 §13 D75 / レビュー反映）
- * - PDF はそもそも `AttachmentList` 側で `disabled` のためモーダルが開かない。
- *   この Dialog では PDF 分岐を持たない（YAGNI、PDF プレビューは雛形外）
- *
- * ADR 出典: ADR-0010 §13 / design.md D75
+ * - txt: 本文を whitespace-pre-wrap で表示
+ * - file（画像）: 画像を表示
+ * - file（PDF など）: iframe で表示
+ * - アップロードした file は dataUrl から実際にダウンロードできる
  */
 
 import { Download } from "lucide-react";
@@ -34,15 +29,35 @@ export function AttachmentPreviewDialog({
   item: Attachment | null;
   onOpenChange: (open: boolean) => void;
 }) {
-  // モーダルは「txt の Attachment」専用。PDF は親側で disabled されているため
-  // ここに到達しない前提だが、型安全のため item?.kind === "txt" でガードする。
+  const isImageFile =
+    item?.kind === "file" && item.mimeType.startsWith("image/");
+  const isOtherFile =
+    item?.kind === "file" && !item.mimeType.startsWith("image/");
+
   return (
     <Dialog open={item !== null} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[80vh] max-w-2xl flex-col gap-3">
+      <DialogContent className="flex max-h-[85vh] max-w-2xl flex-col gap-3">
         <DialogHeader>
           <div className="flex items-center justify-between gap-2 pr-8">
             <DialogTitle className="truncate">{item?.name ?? ""}</DialogTitle>
-            {item && (
+            {item?.kind === "file" ? (
+              <Button
+                variant="outline"
+                size="xs"
+                nativeButton={false}
+                render={
+                  <a
+                    href={item.dataUrl}
+                    download={item.name}
+                    aria-label={`${item.name} をダウンロード`}
+                  />
+                }
+                className="shrink-0"
+              >
+                <Download data-icon="inline-start" />
+                ダウンロード
+              </Button>
+            ) : item ? (
               <Button
                 variant="outline"
                 size="xs"
@@ -53,7 +68,7 @@ export function AttachmentPreviewDialog({
                 <Download data-icon="inline-start" />
                 ダウンロード
               </Button>
-            )}
+            ) : null}
           </div>
           <DialogDescription>
             Esc キーまたは右上 × で閉じます。
@@ -64,6 +79,19 @@ export function AttachmentPreviewDialog({
             <div className="py-1 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
               {item.previewText}
             </div>
+          ) : isImageFile && item?.kind === "file" ? (
+            // eslint-disable-next-line @next/next/no-img-element -- data URL は next/image 非対応
+            <img
+              src={item.dataUrl}
+              alt={item.name}
+              className="mx-auto h-auto max-w-full rounded-md"
+            />
+          ) : isOtherFile && item?.kind === "file" ? (
+            <iframe
+              src={item.dataUrl}
+              title={item.name}
+              className="h-[65vh] w-full rounded-md border border-border"
+            />
           ) : null}
         </ScrollArea>
       </DialogContent>

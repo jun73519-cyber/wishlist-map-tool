@@ -1,19 +1,23 @@
 [
   {
-    "id": "d-product",
-    "name": "プロダクト開発",
+    "id": "d-domestic",
+    "name": "国内",
     "positions": [
-      { "id": "p-fe", "name": "フロントエンドエンジニア", "count": 4 },
-      { "id": "p-be", "name": "バックエンドエンジニア", "count": 3 },
-      { "id": "p-design", "name": "デザイナー", "count": 2 }
+      { "id": "p-tohoku", "name": "北海道・東北", "count": 1 },
+      { "id": "p-chubu", "name": "関東・中部", "count": 1 },
+      { "id": "p-kansai", "name": "関西", "count": 0 },
+      { "id": "p-kyushu", "name": "九州・沖縄", "count": 1 }
     ]
   },
   {
-    "id": "d-biz",
-    "name": "ビジネス",
+    "id": "d-overseas",
+    "name": "海外",
     "positions": [
-      { "id": "p-pm", "name": "プロダクトマネージャー", "count": 3 },
-      { "id": "p-sales", "name": "セールス", "count": 4 }
+      { "id": "p-asia", "name": "アジア", "count": 1 },
+      { "id": "p-europe", "name": "ヨーロッパ", "count": 1 },
+      { "id": "p-americas", "name": "南北アメリカ", "count": 1 },
+      { "id": "p-africa", "name": "アフリカ", "count": 1 },
+      { "id": "p-oceania", "name": "オセアニア・中東ほか", "count": 2 }
     ]
   }
 ]
