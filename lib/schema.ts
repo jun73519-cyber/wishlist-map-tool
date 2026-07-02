@@ -116,13 +116,22 @@ const pdfAttachmentSchema = z.object({
 // アプリからアップロードした写真・PDF。実体を base64 data URL で保持し、
 // localStorage に保存される（サーバー保存は次フェーズ）。画像は表示・拡大でき、
 // それ以外（PDF 等）は新しいタブで開ける。
+// dataUrl は「画像 or PDF の data: URL」だけを許可する（セキュリティ）。
+// 無認証 API のため、第三者が data:text/html,<script>… を仕込むと
+// プレビューの iframe で任意コードが実行され得る。SVG はスクリプトを内包できるため除外。
+const SAFE_DATA_URL =
+  /^data:(?:image\/(?:png|jpe?g|gif|webp|avif)|application\/pdf)[;,]/i;
 const fileAttachmentSchema = z.object({
   id: z.string(),
   kind: z.literal("file"),
   name: z.string(),
   size: z.string(),
   mimeType: z.string(),
-  dataUrl: z.string(),
+  dataUrl: z
+    .string()
+    .refine((s) => SAFE_DATA_URL.test(s), {
+      message: "許可されていない形式です（画像または PDF のみ）",
+    }),
 });
 export const attachmentSchema = z.discriminatedUnion("kind", [
   txtAttachmentSchema,

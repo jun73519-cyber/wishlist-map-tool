@@ -6,6 +6,28 @@ import { placeDraftSchema } from "@/lib/schema";
 // Google GenAI SDK は Node ランタイムで動かす（Edge 不可）。
 export const runtime = "nodejs";
 
+// 入力長の上限（乱用・巨大プロンプト対策）。
+const MAX_NAME_LEN = 200;
+const MAX_URL_LEN = 1000;
+
+// 簡易レート制限（IP ごと・スライディングウィンドウ）。公開URLで無認証のため、
+// 誰でも連打して Gemini の課金/クォータを燃やせるのを緩和する。サーバーレスでは
+// インスタンス単位のメモリなので厳密ではないが、素朴な乱用は十分に抑えられる。
+const RATE_WINDOW_MS = 60_000;
+const RATE_MAX = 8;
+const rateHits = new Map<string, number[]>();
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const recent = (rateHits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  recent.push(now);
+  rateHits.set(ip, recent);
+  return recent.length > RATE_MAX;
+}
+function clientIp(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for");
+  return xff ? xff.split(",")[0]!.trim() : "unknown";
+}
+
 /**
  * 場所の「AI下書き」生成 API（Google Gemini 版）。
  *
@@ -50,6 +72,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  if (isRateLimited(clientIp(req))) {
+    return NextResponse.json(
+      { error: "リクエストが多すぎます。少し待ってから再度お試しください。" },
+      { status: 429 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -62,6 +91,12 @@ export async function POST(req: NextRequest) {
   const url = typeof input.url === "string" ? input.url.trim() : "";
   if (!name) {
     return NextResponse.json({ error: "場所名を入力してください。" }, { status: 400 });
+  }
+  if (name.length > MAX_NAME_LEN || url.length > MAX_URL_LEN) {
+    return NextResponse.json(
+      { error: "入力が長すぎます。場所名やURLを短くしてください。" },
+      { status: 400 },
+    );
   }
 
   const userText = url
@@ -101,8 +136,11 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ draft: parsed.data });
   } catch (err) {
-    const msg =
-      err instanceof Error ? err.message : "AI の呼び出しに失敗しました。";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    // 内部エラーの詳細はサーバーログのみに残し、クライアントには固定文言を返す。
+    console.error("[draft-place] generateContent failed:", err);
+    return NextResponse.json(
+      { error: "AI の呼び出しに失敗しました。時間をおいて再度お試しください。" },
+      { status: 502 },
+    );
   }
 }

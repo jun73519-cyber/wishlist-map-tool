@@ -20,10 +20,19 @@ import {
 } from "@/components/ui/tooltip";
 import { SettingsDialogContent } from "@/components/workspace/SettingsDialog";
 
+type SaveState = "idle" | "saving" | "saved" | "error";
+
+const SAVE_LABEL: Record<Exclude<SaveState, "idle">, string> = {
+  saving: "保存中…",
+  saved: "保存済み",
+  error: "保存できません",
+};
+
 type GlobalHeaderProps = {
   departmentTitle: string;
   positionTitle: string;
   candidateName: string;
+  saveState?: SaveState;
   departments: Department[];
   onAddDepartment: (name: string) => void;
   onDeleteDepartment: (deptId: string) => void;
@@ -33,6 +42,7 @@ export function GlobalHeader({
   departmentTitle,
   positionTitle,
   candidateName,
+  saveState = "idle",
   departments,
   onAddDepartment,
   onDeleteDepartment,
@@ -63,6 +73,17 @@ export function GlobalHeader({
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
+      {saveState !== "idle" && (
+        <span
+          aria-live="polite"
+          className={`shrink-0 text-[11px] ${
+            saveState === "error" ? "text-destructive" : "text-muted-foreground"
+          }`}
+        >
+          {SAVE_LABEL[saveState]}
+        </span>
+      )}
 
       <Dialog>
         <Tooltip>

@@ -90,6 +90,10 @@ export function AttachmentPreviewDialog({
             <iframe
               src={item.dataUrl}
               title={item.name}
+              // 多層防御: スクリプト等を無効化して埋め込みプレビューする。
+              // 表示できない環境でも右上「ダウンロード」で開ける。
+              sandbox=""
+              referrerPolicy="no-referrer"
               className="h-[65vh] w-full rounded-md border border-border"
             />
           ) : null}

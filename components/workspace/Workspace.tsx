@@ -61,11 +61,19 @@ import {
 import { getCandidateAverageScore } from "@/lib/computed/scorecards";
 import { ARCHIVED_GROUP_LABEL, STAGE_LABELS } from "@/lib/labels";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { MapPin } from "lucide-react";
+
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { GlobalHeader } from "@/components/workspace/GlobalHeader";
 import { PositionPane } from "@/components/workspace/PositionPane";
 import { CandidateListPane } from "@/components/workspace/CandidateListPane";
@@ -157,16 +165,25 @@ export function Workspace({
   }, []);
   // 保存は hydrated 後のみ（初回の seed を DB に書き戻して読み込みを上書きするのを防ぐ）。
   // 連続編集で叩きすぎないよう少しデバウンスしてから全件を同期保存する。
+  // 保存状態を UI に出す（無言のデータ喪失を防ぐ）。保存中／保存済み／失敗。
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
   useEffect(() => {
     if (!hydrated) return;
-    const timer = setTimeout(() => {
-      fetch("/api/places", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(candidates),
-      }).catch(() => {
-        // 保存失敗は致命的でないので握りつぶす（次の編集で再送される）
-      });
+    const timer = setTimeout(async () => {
+      setSaveState("saving");
+      try {
+        const res = await fetch("/api/places", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(candidates),
+        });
+        setSaveState(res.ok ? "saved" : "error");
+      } catch {
+        // 保存失敗は致命的でないが、UI に出してユーザーが気づけるようにする。
+        setSaveState("error");
+      }
     }, 600);
     return () => clearTimeout(timer);
   }, [candidates, hydrated]);
@@ -175,13 +192,11 @@ export function Workspace({
   // selectedDetail !== null かつ手動で畳んでいない → 開いている。
   const pane4Open = selectedDetail !== null && !pane4ManuallyClosed;
 
-  // アクティブ場所を取得。`INITIAL_CANDIDATES` が常に最低 1 名持つ前提だが、
-  // 万一 find が undefined を返す（未来に candidates の削除機能が入った場合等）
-  // ケースに備えて先頭場所にフォールバックする。
+  // アクティブ場所を取得。全件削除などで candidates が空になると undefined になり得る。
+  // その場合は Pane 3/4 を空状態に切り替え、`undefined.profile` でのクラッシュを防ぐ。
   const activeCandidate =
     candidates.find((c) => c.id === selectedCandidateId) ?? candidates[0];
-  const profile = activeCandidate.profile;
-  const scorecards = activeCandidate.scorecards;
+  const scorecards = activeCandidate?.scorecards ?? [];
 
   // Mode1ProfileDetail は `setProfile: React.Dispatch<React.SetStateAction<Profile>>`
   // を期待している（採用案 X）。子コンポーネント側の signature を変えないために、
@@ -602,7 +617,8 @@ export function Workspace({
         <GlobalHeader
           departmentTitle={departmentTitle}
           positionTitle={positionTitle}
-          candidateName={profile.name}
+          candidateName={activeCandidate?.profile.name ?? ""}
+          saveState={saveState}
           departments={departments}
           onAddDepartment={addDepartment}
           onDeleteDepartment={deleteDepartment}
@@ -637,16 +653,20 @@ export function Workspace({
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel id="pane-dashboard" order={2} minSize={30}>
-              <CandidateDashboardPane
-                profile={profile}
-                scorecards={scorecards}
-                selectedDetail={selectedDetail}
-                onOpenDetail={openDetail}
-                setProfile={setProfile}
-                applicationInfoOpen={applicationInfoOpen}
-                onApplicationInfoOpenChange={setApplicationInfoOpen}
-                selectedCandidateId={selectedCandidateId}
-              />
+              {activeCandidate ? (
+                <CandidateDashboardPane
+                  profile={activeCandidate.profile}
+                  scorecards={activeCandidate.scorecards}
+                  selectedDetail={selectedDetail}
+                  onOpenDetail={openDetail}
+                  setProfile={setProfile}
+                  applicationInfoOpen={applicationInfoOpen}
+                  onApplicationInfoOpenChange={setApplicationInfoOpen}
+                  selectedCandidateId={selectedCandidateId}
+                />
+              ) : (
+                <EmptyDashboard />
+              )}
             </ResizablePanel>
             {pane4Open && (
               <>
@@ -678,5 +698,25 @@ export function Workspace({
         </div>
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+// 場所が 1 件も無いとき（全件削除・サンプルに戻す直後など）に Pane 3 に出す空状態。
+// クラッシュ防止だけでなく「次に何をすればいいか」を示す（Refactoring UI の Polish）。
+function EmptyDashboard() {
+  return (
+    <div className="flex h-full items-center justify-center p-8">
+      <Card className="max-w-sm">
+        <CardHeader className="items-center text-center">
+          <div className="flex size-12 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <MapPin className="size-6" />
+          </div>
+          <CardTitle>まだ場所がありません</CardTitle>
+          <CardDescription>
+            左の一覧の「＋」から、行きたい場所を追加しましょう。
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    </div>
   );
 }
