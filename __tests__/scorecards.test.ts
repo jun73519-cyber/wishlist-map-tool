@@ -1,29 +1,32 @@
 import { describe, it, expect } from "vitest";
 import { deriveStageStatus } from "@/lib/computed/scorecards";
 
+// ステージ状態は「場所が Pane 2 でどこに居るか（currentStage）」から派生する。
+// 旧 decision（ステータス: 行きたい/検討中/見送り）基準は撤去済み。
 describe("deriveStageStatus", () => {
-  it("date も decision も空なら pending", () => {
-    expect(deriveStageStatus("", undefined)).toBe("pending");
-    expect(deriveStageStatus("")).toBe("pending");
+  it("現在位置と同じステージは done", () => {
+    expect(deriveStageStatus("screening", "screening", "")).toBe("done");
+    expect(deriveStageStatus("final", "final", "")).toBe("done");
   });
 
-  it("date があり decision が空なら planned", () => {
-    expect(deriveStageStatus("2026-05-01", undefined)).toBe("planned");
-    expect(deriveStageStatus("2026-05-01", "")).toBe("planned");
+  it("現在位置より前のステージは done（通過済み）", () => {
+    expect(deriveStageStatus("screening", "final", "")).toBe("done");
+    expect(deriveStageStatus("first", "second", "2026-05-01")).toBe("done");
   });
 
-  it("decision があれば done（date の有無は問わない）", () => {
-    expect(deriveStageStatus("2026-05-01", "行きたい")).toBe("done");
-    expect(deriveStageStatus("", "見送り")).toBe("done");
+  it("現在位置より先のステージは date があれば planned", () => {
+    expect(deriveStageStatus("second", "first", "2026-05-01")).toBe("planned");
+    expect(deriveStageStatus("final", "screening", "2026-12-01")).toBe(
+      "planned",
+    );
   });
 
-  it("空白のみの decision は空扱いで done にならない", () => {
-    expect(deriveStageStatus("2026-05-01", "  ")).toBe("planned");
-    expect(deriveStageStatus("", "  ")).toBe("pending");
+  it("現在位置より先のステージで date が無ければ pending", () => {
+    expect(deriveStageStatus("second", "first", "")).toBe("pending");
+    expect(deriveStageStatus("final", "screening", "")).toBe("pending");
   });
 
   it("空白のみの date は空扱いで planned にならない", () => {
-    expect(deriveStageStatus("  ", undefined)).toBe("pending");
-    expect(deriveStageStatus("  ", "行きたい")).toBe("done");
+    expect(deriveStageStatus("second", "first", "  ")).toBe("pending");
   });
 });

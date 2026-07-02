@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   type Profile,
+  type StageKey,
   type StageStatus,
   type Scorecard,
   type SelectedDetail,
@@ -42,7 +43,6 @@ import {
   deriveStageStatus,
 } from "@/lib/computed/scorecards";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardAction,
@@ -291,10 +291,12 @@ function RecruitingConditionsCard({
 
 function ScreeningFlowListCard({
   scorecards,
+  currentStage,
   selectedDetail,
   onOpenDetail,
 }: {
   scorecards: Scorecard[];
+  currentStage: StageKey;
   selectedDetail: SelectedDetail;
   onOpenDetail: (next: SelectedDetail, scrollAnchor?: string) => void;
 }) {
@@ -329,7 +331,7 @@ function ScreeningFlowListCard({
             const selected =
               selectedDetail?.type === "stage" &&
               selectedDetail.stage === s.stage;
-            const status = deriveStageStatus(s.date, s.decision);
+            const status = deriveStageStatus(s.stage, currentStage, s.date);
             const showComment = status === "done" && !!s.comment;
 
             return (
@@ -362,11 +364,6 @@ function ScreeningFlowListCard({
                           <span className="text-xs text-muted-foreground">
                             {s.date}
                           </span>
-                        )}
-                        {s.decision && (
-                          <Badge variant="outline" size="xs">
-                            {s.decision}
-                          </Badge>
                         )}
                       </div>
                     </div>
@@ -632,9 +629,11 @@ function ApplicationInfoCard({
 function CandidateHeader({
   profile,
   scorecards,
+  currentStage,
 }: {
   profile: Profile;
   scorecards: Scorecard[];
+  currentStage: StageKey;
 }) {
   return (
     <div className="flex items-center gap-5">
@@ -648,7 +647,9 @@ function CandidateHeader({
           {profile.name || "場所名未設定"}
         </h2>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ScoreLabel value={getScorecardsAverageScore(scorecards)} />
+          <ScoreLabel
+            value={getScorecardsAverageScore(scorecards, currentStage)}
+          />
         </div>
       </div>
     </div>
@@ -660,6 +661,7 @@ function CandidateHeader({
 export function CandidateDashboardPane({
   profile,
   scorecards,
+  currentStage,
   selectedDetail,
   onOpenDetail,
   setProfile,
@@ -671,6 +673,7 @@ export function CandidateDashboardPane({
 }: {
   profile: Profile;
   scorecards: Scorecard[];
+  currentStage: StageKey;
   selectedDetail: SelectedDetail;
   onOpenDetail: (next: SelectedDetail, scrollAnchor?: string) => void;
   setProfile: React.Dispatch<React.SetStateAction<Profile>>;
@@ -684,7 +687,11 @@ export function CandidateDashboardPane({
     <section className="h-full w-full min-w-0 bg-canvas">
       <ScrollArea className="h-full">
         <div className="mx-auto flex max-w-3xl flex-col gap-4 px-8 py-8">
-          <CandidateHeader profile={profile} scorecards={scorecards} />
+          <CandidateHeader
+            profile={profile}
+            scorecards={scorecards}
+            currentStage={currentStage}
+          />
 
           <ApplicationInfoCard
             profile={profile}
@@ -704,6 +711,7 @@ export function CandidateDashboardPane({
 
           <ScreeningFlowListCard
             scorecards={scorecards}
+            currentStage={currentStage}
             selectedDetail={selectedDetail}
             onOpenDetail={onOpenDetail}
           />

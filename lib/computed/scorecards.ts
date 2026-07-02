@@ -17,6 +17,7 @@ import {
   type Candidate,
   type AxisScores,
   type Scorecard,
+  type StageKey,
   type StageStatus,
   AXIS_ORDER,
   STAGE_ORDER,
@@ -31,10 +32,11 @@ import {
  */
 export function getLatestDoneScorecard(
   scorecards: Scorecard[],
+  currentStage: StageKey,
 ): Scorecard | undefined {
   return [...scorecards]
     .reverse()
-    .find((s) => deriveStageStatus(s.date, s.decision) === "done");
+    .find((s) => deriveStageStatus(s.stage, currentStage, s.date) === "done");
 }
 
 /**
@@ -60,7 +62,7 @@ export function calculateAverageScore(axisScores: AxisScores): number | null {
  * scorecards を持たないいずれの場合も null（未評価扱い）。
  */
 export function getCandidateAverageScore(candidate: Candidate): number | null {
-  const latest = getLatestDoneScorecard(candidate.scorecards);
+  const latest = getLatestDoneScorecard(candidate.scorecards, candidate.stage);
   if (!latest) return null;
   return calculateAverageScore(latest.axisScores);
 }
@@ -71,13 +73,18 @@ export function getCandidateAverageScore(candidate: Candidate): number | null {
  *
  * 空配列が返った場合は「コメントはまだ記入されていません」の placeholder を表示する。
  */
-export function getCommentedScorecards(scorecards: Scorecard[]): Scorecard[] {
+export function getCommentedScorecards(
+  scorecards: Scorecard[],
+  currentStage: StageKey,
+): Scorecard[] {
   const stageIndex = Object.fromEntries(
     STAGE_ORDER.map((s, i) => [s, i]),
   ) as Record<string, number>;
   return scorecards
     .filter(
-      (s) => deriveStageStatus(s.date, s.decision) === "done" && s.comment,
+      (s) =>
+        deriveStageStatus(s.stage, currentStage, s.date) === "done" &&
+        s.comment,
     )
     .sort((a, b) => (stageIndex[a.stage] ?? 0) - (stageIndex[b.stage] ?? 0));
 }
@@ -89,30 +96,37 @@ export function getCommentedScorecards(scorecards: Scorecard[]): Scorecard[] {
  */
 export function getScorecardsAverageScore(
   scorecards: Scorecard[],
+  currentStage: StageKey,
 ): number | null {
-  const latest = getLatestDoneScorecard(scorecards);
+  const latest = getLatestDoneScorecard(scorecards, currentStage);
   if (!latest) return null;
   return calculateAverageScore(latest.axisScores);
 }
 
 /**
- * Scorecard の date / decision の有無から状態を派生計算する。
+ * ステージの状態を「場所が Pane 2 でどこに居るか（currentStage）」から派生計算する。
  *
  * ADR-0015 §17.1 追加決定 I で `Scorecard.status` フィールドを廃止したため、
  * 表示時に都度この関数で導出する MUST。
  *
- *   - decision あり (truthy)               → done   (実施済 + 結果あり)
- *   - decision なし、date あり (truthy)    → planned (予定済)
- *   - 両方なし                              → pending (未着手)
+ * 旧実装は scorecard.decision（行きたい/検討中/見送り = 採用ドメインの「合否」の名残）で
+ * done を判定していたが、旅行ドメインでは Pane 2 のステージ位置が真実のため廃止した:
+ *
+ *   - そのステージが現在位置以前 (stage <= currentStage) → done   (通過済み・実施済)
+ *   - 現在位置より先で date あり                          → planned (予定済)
+ *   - 現在位置より先で date なし                          → pending (未着手)
  *
  * Pane 3 検討フローカードの StageIcon、コメント抽出のフィルタ、ヘッダー帯の
  * ★ スコア表示など、status を必要とするすべての表示で使う。
  */
 export function deriveStageStatus(
+  stage: StageKey,
+  currentStage: StageKey,
   date: string,
-  decision?: string,
 ): StageStatus {
-  if (decision && decision.trim() !== "") return "done";
+  const idx = STAGE_ORDER.indexOf(stage);
+  const cur = STAGE_ORDER.indexOf(currentStage);
+  if (idx <= cur) return "done";
   if (date && date.trim() !== "") return "planned";
   return "pending";
 }

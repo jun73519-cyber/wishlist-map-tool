@@ -154,6 +154,9 @@ export const scorecardSchema = z.object({
   date: z.string(),
   format: z.string(),
   interviewer: z.string(),
+  // 旧「ステータス」（行きたい/検討中/見送り = 採用ドメインの合否の名残）。
+  // UI からは撤去済みで、✓済み判定は Pane 2 のステージ位置から派生する
+  // （deriveStageStatus）。過去データ・バックアップが読めるよう受け口だけ残す。
   decision: z.string().optional(),
   comment: z.string().optional(),
   summary: z.string().optional(),

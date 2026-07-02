@@ -105,15 +105,15 @@ const MapView = dynamic(
 // たいため export せず、親側で同じ形を再宣言して持つ。
 //
 // ADR-0014「shadcn 標準フォームによる Pane 4 編集 UI」で `comment` / `summary`
-// を `InlineTextareaField` で編集対象に追加したため、旧 4 フィールドから 6 フィールド
-// に拡張。CandidateDetailPane.tsx 側の同型宣言（line 70-76）と同期させる。
+// を `InlineTextareaField` で編集対象に追加。旧 `decision`（ステータス）は
+// 採用ドメインの名残のため撤去した（済み判定は Pane 2 のステージ位置から派生）。
+// CandidateDetailPane.tsx 側の同型宣言と同期させる。
 // `onUpdateScorecardField` 実装本体は `[field]: value` のスプレッドで
 // 動作するため、ロジックの追加修正は不要。
 type EditableScorecardKey =
   | "date"
   | "format"
   | "interviewer"
-  | "decision"
   | "comment"
   | "summary";
 
@@ -457,8 +457,6 @@ export function Workspace({
   );
 
   // Pane 4 モード 2「メタ情報」の inline edit から呼ばれる。
-  // `decision` だけ undefined を許すため、空文字は undefined として扱う
-  // （`MetaRow` 廃止前の "未判定" 表示の代替: `EditableFieldRow` 側で空 = "未設定"）。
   // フェーズ 3A: アクティブ場所の scorecards を更新する形に変更。
   const updateScorecardField = useCallback(
     (stage: StageKey, field: EditableScorecardKey, value: string) => {
@@ -467,17 +465,9 @@ export function Workspace({
           c.id === selectedCandidateId
             ? {
                 ...c,
-                scorecards: c.scorecards.map((s) => {
-                  if (s.stage !== stage) return s;
-                  if (field === "decision") {
-                    const trimmed = value.trim();
-                    return {
-                      ...s,
-                      decision: trimmed === "" ? undefined : trimmed,
-                    };
-                  }
-                  return { ...s, [field]: value };
-                }),
+                scorecards: c.scorecards.map((s) =>
+                  s.stage === stage ? { ...s, [field]: value } : s,
+                ),
               }
             : c,
         ),
@@ -742,6 +732,7 @@ export function Workspace({
                     <CandidateDashboardPane
                       profile={activeCandidate.profile}
                       scorecards={activeCandidate.scorecards}
+                      currentStage={activeCandidate.stage}
                       selectedDetail={selectedDetail}
                       onOpenDetail={openDetail}
                       setProfile={setProfile}

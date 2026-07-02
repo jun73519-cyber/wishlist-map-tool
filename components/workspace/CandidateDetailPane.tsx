@@ -53,24 +53,22 @@ import { AttachmentList } from "@/components/workspace/AttachmentList";
  * Pane 4 モード 2 で inline 編集できる Scorecard のキー集合。
  * `onUpdateScorecardField` の `field` 引数の型として親 (Workspace.tsx) と整合させる。
  *
- * 旧実装は `date / format / interviewer / decision` の 4 フィールドのみだったが、
- * ADR-0014 でコメント / 要約も `InlineTextareaField` で編集対象にしたため
- * `comment` / `summary` を追加した。Workspace.tsx 側の `EditableScorecardKey`
- * 再宣言も同形に揃える必要がある（型を export しない設計のため両側で宣言する規律）。
+ * ADR-0014 でコメント / 要約も `InlineTextareaField` で編集対象にした。
+ * 旧 `decision`（ステータス: 行きたい/検討中/見送り）は採用ドメインの「合否」の名残で、
+ * 旅行では Pane 2 のステージ位置が真実のため編集対象から撤去した（deriveStageStatus 参照）。
+ * Workspace.tsx 側の `EditableScorecardKey` 再宣言も同形に揃える必要がある
+ * （型を export しない設計のため両側で宣言する規律）。
  */
 type EditableScorecardKey =
   | "date"
   | "format"
   | "interviewer"
-  | "decision"
   | "comment"
   | "summary";
 
 // ===== 定数（screening-lab / profile-card-lab から移植） =====
 
 const FORMAT_OPTIONS = ["電車", "車", "飛行機", "バス", "徒歩"] as const;
-
-const DECISION_OPTIONS = ["行きたい", "検討中", "見送り"] as const;
 
 const INITIAL_INTERVIEWER_OPTIONS: ComboOption[] = [
   { value: "ひとり旅", description: "自分ひとりで" },
@@ -390,16 +388,6 @@ function Mode2StageDetail({
             />
           </InlineFieldRow>
 
-          <InlineFieldRow label="ステータス">
-            <InlineSelectField
-              value={scorecard.decision ?? ""}
-              options={DECISION_OPTIONS}
-              onSave={(v) =>
-                onUpdateScorecardField(scorecard.stage, "decision", v)
-              }
-              ariaLabel="ステータス"
-            />
-          </InlineFieldRow>
         </dl>
       </Pane4Section>
 

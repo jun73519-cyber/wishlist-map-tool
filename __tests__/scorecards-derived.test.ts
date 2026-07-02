@@ -41,25 +41,22 @@ describe("calculateAverageScore", () => {
 });
 
 describe("getLatestDoneScorecard", () => {
-  it("done が無ければ undefined", () => {
+  it("現在位置より先のステージしか無ければ undefined", () => {
     const cards = [
-      baseScorecard({ stage: "screening", date: "2026-04-01" }),
-      baseScorecard({ stage: "first" }),
+      baseScorecard({ stage: "first", date: "2026-04-01" }),
+      baseScorecard({ stage: "second" }),
     ];
-    expect(getLatestDoneScorecard(cards)).toBeUndefined();
+    expect(getLatestDoneScorecard(cards, "screening")).toBeUndefined();
   });
 
-  it("配列末尾に近い done を返す（検討フローで最も進んだ評価）", () => {
+  it("配列末尾に近い done（現在位置以前）を返す", () => {
     const cards = [
-      baseScorecard({
-        stage: "screening",
-        date: "2026-04-01",
-        decision: "行きたい",
-      }),
-      baseScorecard({ stage: "first", date: "2026-04-10", decision: "行きたい" }),
+      baseScorecard({ stage: "screening", date: "2026-04-01" }),
+      baseScorecard({ stage: "first", date: "2026-04-10" }),
       baseScorecard({ stage: "second", date: "2026-04-20" }),
     ];
-    const latest = getLatestDoneScorecard(cards);
+    // 現在位置が「計画中(first)」なら screening / first が done → 末尾に近い first
+    const latest = getLatestDoneScorecard(cards, "first");
     expect(latest?.stage).toBe("first");
   });
 });
@@ -88,41 +85,37 @@ describe("getCandidateAverageScore / getScorecardsAverageScore", () => {
       archived: false,
     };
     expect(getCandidateAverageScore(candidate)).toBeNull();
-    expect(getScorecardsAverageScore([])).toBeNull();
+    expect(getScorecardsAverageScore([], "screening")).toBeNull();
   });
 
-  it("最新 done の axisScores を平均する", () => {
+  it("最新 done（現在位置以前）の axisScores を平均する", () => {
     const cards = [
       baseScorecard({
         stage: "screening",
-        decision: "行きたい",
         axisScores: {
           wishLevel: 5,
         },
       }),
       baseScorecard({
         stage: "first",
-        decision: "行きたい",
         axisScores: {
           wishLevel: 3,
         },
       }),
     ];
-    expect(getScorecardsAverageScore(cards)).toBe(3);
+    expect(getScorecardsAverageScore(cards, "first")).toBe(3);
   });
 });
 
 describe("getCommentedScorecards", () => {
-  it("done かつ comment 付きのみ STAGE_ORDER 順に返す", () => {
+  it("done（現在位置以前）かつ comment 付きのみ STAGE_ORDER 順に返す", () => {
     const cards = [
       baseScorecard({
         stage: "first",
-        decision: "行きたい",
         comment: "前向き",
       }),
       baseScorecard({
         stage: "screening",
-        decision: "行きたい",
         comment: "下調べ済み",
       }),
       baseScorecard({
@@ -131,7 +124,8 @@ describe("getCommentedScorecards", () => {
         comment: "未確定だが期待",
       }),
     ];
-    const result = getCommentedScorecards(cards);
+    // 現在位置が first なら second はまだ done でない
+    const result = getCommentedScorecards(cards, "first");
     expect(result.map((c) => c.stage)).toEqual(["screening", "first"]);
   });
 });
