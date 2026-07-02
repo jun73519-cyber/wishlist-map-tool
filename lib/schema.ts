@@ -190,6 +190,10 @@ export const candidateSchema = z.object({
   // 復元時は `stage` をそのまま使って元のステージへ戻る。JSON シードでは省略可
   // （`.default(false)` で読み込み時に補完）。
   archived: z.boolean().default(false),
+  // 地図ビュー用の座標（任意）。未設定の場所はピンが立たないだけで他機能に影響しない。
+  // 入り方は 3 通り: AI 下書きの推定 / 基本情報の手入力 / 地図クリックで指定。
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
 });
 export type Candidate = z.infer<typeof candidateSchema>;
 
@@ -216,6 +220,10 @@ export const placeDraftSchema = z.object({
   desiredSalaryMax: z.string(),
   careerText: z.string(),
   motivationFull: z.string(),
+  // 地図ビュー用の推定座標（10進の文字列。不明なら空文字）。
+  // profile ではなく Candidate.lat/lng に数値化して格納する。
+  lat: z.string(),
+  lng: z.string(),
 });
 export type PlaceDraft = z.infer<typeof placeDraftSchema>;
 

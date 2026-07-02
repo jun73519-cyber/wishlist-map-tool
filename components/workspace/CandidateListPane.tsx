@@ -70,7 +70,11 @@ type CandidateListPaneProps = {
   selectedCandidateId: string;
   onSelectCandidate: (id: string) => void;
   onAddCandidate: (stage: StageKey, name: string) => void;
-  onAddCandidateWithProfile: (stage: StageKey, profile: Profile) => void;
+  onAddCandidateWithProfile: (
+    stage: StageKey,
+    profile: Profile,
+    coords?: { lat: number; lng: number },
+  ) => void;
   onArchiveCandidate: (id: string) => void;
   onRestoreCandidate: (id: string) => void;
   onDeleteCandidate: (id: string) => void;
@@ -217,18 +221,26 @@ export function CandidateListPane({
         body: JSON.stringify({ name, url }),
       });
       const data = (await res.json().catch(() => null)) as {
-        draft?: Partial<Profile>;
+        draft?: Partial<Profile> & { lat?: string; lng?: string };
         error?: string;
       } | null;
       if (!res.ok || !data?.draft) {
         throw new Error(data?.error ?? "下書きの生成に失敗しました。");
       }
+      // 座標は profile ではなく Candidate.lat/lng（数値）に入れるため分離する。
+      const { lat: latStr, lng: lngStr, ...profileDraft } = data.draft;
+      const lat = Number(latStr);
+      const lng = Number(lngStr);
+      const coords =
+        latStr && lngStr && Number.isFinite(lat) && Number.isFinite(lng)
+          ? { lat, lng }
+          : undefined;
       const profile: Profile = {
         ...createMinimalProfile(name),
-        ...data.draft,
+        ...profileDraft,
         name,
       };
-      onAddCandidateWithProfile(stage, profile);
+      onAddCandidateWithProfile(stage, profile, coords);
     },
     [onAddCandidateWithProfile],
   );

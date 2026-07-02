@@ -2,6 +2,8 @@
   {
     "id": "c1",
     "area": "p-kyushu",
+    "lat": 30.358,
+    "lng": 130.531,
     "profile": {
       "name": "屋久島・縄文杉トレッキング",
       "birthday": "",
@@ -34,6 +36,8 @@
   {
     "id": "c2",
     "area": "p-asia",
+    "lat": 22.2711,
+    "lng": 114.1489,
     "profile": {
       "name": "香港・ビクトリアピークと裏路地グルメ",
       "birthday": "",
@@ -126,6 +130,8 @@
   {
     "id": "c3",
     "area": "p-tohoku",
+    "lat": 40.527,
+    "lng": 140.988,
     "profile": {
       "name": "奥入瀬渓流と十和田湖の紅葉",
       "birthday": "",
@@ -169,6 +175,8 @@
   {
     "id": "c4",
     "area": "p-chubu",
+    "lat": 36.5613,
+    "lng": 136.6624,
     "profile": {
       "name": "金沢・兼六園と21世紀美術館",
       "birthday": "",
@@ -230,6 +238,8 @@
   {
     "id": "c5",
     "area": "p-europe",
+    "lat": 64.0784,
+    "lng": -16.2306,
     "profile": {
       "name": "アイスランド・オーロラと氷河湖",
       "birthday": "",
@@ -262,6 +272,8 @@
   {
     "id": "c6",
     "area": "p-americas",
+    "lat": -13.1631,
+    "lng": -72.545,
     "profile": {
       "name": "ペルー・マチュピチュ",
       "birthday": "",
@@ -305,6 +317,8 @@
   {
     "id": "c7",
     "area": "p-oceania",
+    "lat": -44.0046,
+    "lng": 170.4771,
     "profile": {
       "name": "ニュージーランド・テカポ湖の星空",
       "birthday": "",
@@ -337,6 +351,8 @@
   {
     "id": "c8",
     "area": "p-oceania",
+    "lat": 25.1972,
+    "lng": 55.2744,
     "profile": {
       "name": "ドバイ・ブルジュ・ハリファ",
       "birthday": "",
@@ -371,6 +387,8 @@
   {
     "id": "c9",
     "area": "p-africa",
+    "lat": -17.9243,
+    "lng": 25.8572,
     "profile": {
       "name": "アフリカ縦断（ビクトリアの滝〜喜望峰）",
       "birthday": "",
@@ -412,6 +430,8 @@
   {
     "id": "tour-italy-2024",
     "area": "p-europe",
+    "lat": 37.8516,
+    "lng": 15.2853,
     "profile": {
       "name": "南イタリア・シチリア島 周遊（2024）",
       "birthday": "",

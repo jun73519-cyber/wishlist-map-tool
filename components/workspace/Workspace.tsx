@@ -61,13 +61,15 @@ import {
 import { getCandidateAverageScore } from "@/lib/computed/scorecards";
 import { ARCHIVED_GROUP_LABEL, STAGE_LABELS } from "@/lib/labels";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { MapPin } from "lucide-react";
+import dynamic from "next/dynamic";
+import { MapPin, Map as MapIcon, NotebookText } from "lucide-react";
 
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Card,
   CardHeader,
@@ -82,6 +84,12 @@ import {
   CandidateDetailPane,
   Pane4CollapsedRail,
 } from "@/components/workspace/CandidateDetailPane";
+
+// Leaflet は window に依存するため SSR では読み込まない（クライアント側でのみ描画）。
+const MapView = dynamic(
+  () => import("@/components/workspace/MapView").then((m) => m.MapView),
+  { ssr: false },
+);
 
 // ========== UI 内部型 ==========
 //
@@ -133,6 +141,8 @@ export function Workspace({
   // Pane 1 で選択中のエリア（position.id）。null は「すべて」（全件表示）。
   // エリアを選ぶと Pane 2 はその area を持つ場所だけに絞り込まれる。
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+  // Pane 3 の表示モード。"detail" = 場所の詳細（従来） / "map" = 地図ビュー。
+  const [pane3View, setPane3View] = useState<"detail" | "map">("detail");
 
   // 場所(candidates)はデータベース(Neon)に保存し、リロード・別端末・他人からも
   // 同じものが見えるようにする。`/api/places` 経由で読み書きする（SQL や接続文字列は
@@ -277,7 +287,11 @@ export function Workspace({
   // 渡された profile をそのまま使う。生成は呼び出し側（CandidateListPane）が
   // `/api/draft-place` を叩いて行い、ここには完成した profile が渡る。
   const addCandidateWithProfile = useCallback(
-    (stage: StageKey, profile: Profile) => {
+    (
+      stage: StageKey,
+      profile: Profile,
+      coords?: { lat: number; lng: number },
+    ) => {
       const newId = `c-${Date.now()}`;
       const newCandidate: Candidate = {
         id: newId,
@@ -286,6 +300,7 @@ export function Workspace({
         stage,
         area: selectedAreaId ?? "",
         archived: false,
+        ...(coords ?? {}),
       };
       setCandidates((prev) => [...prev, newCandidate]);
       setSelectedCandidateId(newId);
@@ -518,6 +533,18 @@ export function Workspace({
     [selectedCandidateId],
   );
 
+  // 選択中の場所に座標を設定する（地図クリック / 基本情報の手入力から呼ばれる）。
+  const updateCoords = useCallback(
+    (lat: number, lng: number) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === selectedCandidateId ? { ...c, lat, lng } : c,
+        ),
+      );
+    },
+    [selectedCandidateId],
+  );
+
   // Pane 4 内の `useEffect` 依存安定化のため、Workspace 側でメモ化して props で渡す。
   const consumeScrollAnchor = useCallback(() => setScrollAnchor(null), []);
   const togglePane4 = useCallback(() => setPane4ManuallyClosed((v) => !v), []);
@@ -594,6 +621,29 @@ export function Workspace({
     ];
   }, [candidates, selectedAreaId]);
 
+  // 地図ビュー用の派生計算。Pane 2 と同じ絞り込み（エリア・非アーカイブ）を適用し、
+  // 座標を持つ場所だけをピンとして渡す（座標なしは件数ヒントとして表示）。
+  const mapData = useMemo(() => {
+    const visible = candidates.filter(
+      (c) =>
+        !c.archived && (selectedAreaId === null || c.area === selectedAreaId),
+    );
+    const places = visible.flatMap((c) =>
+      typeof c.lat === "number" && typeof c.lng === "number"
+        ? [
+            {
+              id: c.id,
+              name: c.profile.name,
+              stage: c.stage,
+              lat: c.lat,
+              lng: c.lng,
+            },
+          ]
+        : [],
+    );
+    return { places, totalCount: visible.length };
+  }, [candidates, selectedAreaId]);
+
   return (
     // shadcn/ui の SidebarProvider が外側を取り、Pane 1 (`<Sidebar>`) を全高で固定
     // 表示する。SidebarInset が右側ブロック（GlobalHeader + Pane 2/3/4）を担う。
@@ -653,20 +703,62 @@ export function Workspace({
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel id="pane-dashboard" order={2} minSize={30}>
-              {activeCandidate ? (
-                <CandidateDashboardPane
-                  profile={activeCandidate.profile}
-                  scorecards={activeCandidate.scorecards}
-                  selectedDetail={selectedDetail}
-                  onOpenDetail={openDetail}
-                  setProfile={setProfile}
-                  applicationInfoOpen={applicationInfoOpen}
-                  onApplicationInfoOpenChange={setApplicationInfoOpen}
-                  selectedCandidateId={selectedCandidateId}
-                />
-              ) : (
-                <EmptyDashboard />
-              )}
+              <div className="flex h-full min-h-0 flex-col">
+                {/* Pane 3 のビュー切替（詳細 ⇄ 地図）。地図は Pane 2 と同じ絞り込みの全場所を俯瞰する。 */}
+                <div className="flex h-12 shrink-0 items-center justify-end border-b border-border bg-background px-3">
+                  <ToggleGroup
+                    variant="outline"
+                    size="sm"
+                    value={[pane3View]}
+                    onValueChange={(groupValue) => {
+                      const next = groupValue[0];
+                      if (next === "detail" || next === "map")
+                        setPane3View(next);
+                    }}
+                    aria-label="Pane 3 の表示切替"
+                  >
+                    <ToggleGroupItem value="detail" aria-label="詳細を表示">
+                      <NotebookText data-icon="inline-start" />
+                      詳細
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="map" aria-label="地図を表示">
+                      <MapIcon data-icon="inline-start" />
+                      地図
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+                <div className="min-h-0 flex-1">
+                  {pane3View === "map" ? (
+                    <MapView
+                      places={mapData.places}
+                      totalCount={mapData.totalCount}
+                      selectedId={selectedCandidateId}
+                      activeName={activeCandidate?.profile.name ?? ""}
+                      onSelectPlace={selectCandidate}
+                      onOpenDetail={() => setPane3View("detail")}
+                      onSetCoords={updateCoords}
+                    />
+                  ) : activeCandidate ? (
+                    <CandidateDashboardPane
+                      profile={activeCandidate.profile}
+                      scorecards={activeCandidate.scorecards}
+                      selectedDetail={selectedDetail}
+                      onOpenDetail={openDetail}
+                      setProfile={setProfile}
+                      applicationInfoOpen={applicationInfoOpen}
+                      onApplicationInfoOpenChange={setApplicationInfoOpen}
+                      selectedCandidateId={selectedCandidateId}
+                      coords={{
+                        lat: activeCandidate.lat,
+                        lng: activeCandidate.lng,
+                      }}
+                      onUpdateCoords={updateCoords}
+                    />
+                  ) : (
+                    <EmptyDashboard />
+                  )}
+                </div>
+              </div>
             </ResizablePanel>
             {pane4Open && (
               <>

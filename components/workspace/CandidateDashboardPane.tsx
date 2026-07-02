@@ -25,6 +25,7 @@ import {
   X,
   Star,
   StarHalf,
+  LocateFixed,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -430,9 +431,13 @@ function ContactRow({
 function ApplicationInfoCardContent({
   profile,
   setProfile,
+  coords,
+  onUpdateCoords,
 }: {
   profile: Profile;
   setProfile: React.Dispatch<React.SetStateAction<Profile>>;
+  coords?: { lat?: number; lng?: number };
+  onUpdateCoords: (lat: number, lng: number) => void;
 }) {
   const [sourceOptions, setSourceOptions] = useState<ComboOption[]>(
     INITIAL_SOURCE_OPTIONS,
@@ -509,6 +514,36 @@ function ApplicationInfoCardContent({
               ariaLabel="所在地"
             />
           </ContactRow>
+          <ContactRow
+            icon={<LocateFixed className="size-3.5" />}
+            label="緯度経度"
+          >
+            {/* 地図ビューのピン位置。「35.68, 139.76」形式で保存すると地図にピンが立つ。
+                地図ビューの「位置を設定」（地図クリック）や AI 下書きでも自動で入る。 */}
+            <InlineTextField
+              value={
+                typeof coords?.lat === "number" &&
+                typeof coords?.lng === "number"
+                  ? `${coords.lat}, ${coords.lng}`
+                  : ""
+              }
+              onSave={(v) => {
+                const m = v.trim().split(/[,\s]+/);
+                const lat = Number(m[0]);
+                const lng = Number(m[1]);
+                if (
+                  m.length >= 2 &&
+                  Number.isFinite(lat) &&
+                  Number.isFinite(lng) &&
+                  Math.abs(lat) <= 90 &&
+                  Math.abs(lng) <= 180
+                ) {
+                  onUpdateCoords(lat, lng);
+                }
+              }}
+              ariaLabel="緯度経度（例: 35.68, 139.76）"
+            />
+          </ContactRow>
         </ul>
       </section>
 
@@ -545,12 +580,16 @@ function ApplicationInfoCard({
   open,
   onOpenChange,
   candidateKey,
+  coords,
+  onUpdateCoords,
 }: {
   profile: Profile;
   setProfile: React.Dispatch<React.SetStateAction<Profile>>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   candidateKey: string;
+  coords?: { lat?: number; lng?: number };
+  onUpdateCoords: (lat: number, lng: number) => void;
 }) {
   return (
     <Card>
@@ -578,6 +617,8 @@ function ApplicationInfoCard({
               key={candidateKey}
               profile={profile}
               setProfile={setProfile}
+              coords={coords}
+              onUpdateCoords={onUpdateCoords}
             />
           </CardContent>
         </CollapsibleContent>
@@ -625,6 +666,8 @@ export function CandidateDashboardPane({
   applicationInfoOpen,
   onApplicationInfoOpenChange,
   selectedCandidateId,
+  coords,
+  onUpdateCoords,
 }: {
   profile: Profile;
   scorecards: Scorecard[];
@@ -634,6 +677,8 @@ export function CandidateDashboardPane({
   applicationInfoOpen: boolean;
   onApplicationInfoOpenChange: (open: boolean) => void;
   selectedCandidateId: string;
+  coords?: { lat?: number; lng?: number };
+  onUpdateCoords: (lat: number, lng: number) => void;
 }) {
   return (
     <section className="h-full w-full min-w-0 bg-canvas">
@@ -647,6 +692,8 @@ export function CandidateDashboardPane({
             open={applicationInfoOpen}
             onOpenChange={onApplicationInfoOpenChange}
             candidateKey={selectedCandidateId}
+            coords={coords}
+            onUpdateCoords={onUpdateCoords}
           />
 
           <RecruitingConditionsCard
