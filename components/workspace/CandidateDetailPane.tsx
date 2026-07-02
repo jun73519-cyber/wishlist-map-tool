@@ -17,7 +17,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ImagePlus, Loader2 } from "lucide-react";
+import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 
 import { Pane4Toggle } from "@/components/workspace/Pane4Toggle";
 
@@ -26,6 +26,7 @@ import {
   type StageKey,
   type Scorecard,
   type Attachment,
+  type Profile,
   type SelectedDetail,
   AXIS_ORDER,
 } from "@/lib/schema";
@@ -198,6 +199,113 @@ function AttachmentUploader({ onAdd }: { onAdd: (a: Attachment) => void }) {
   );
 }
 
+// ===== AI 旅程案（発展課題: /api/draft-itinerary） =====
+
+const ITINERARY_DAYS_OPTIONS = [
+  "日帰り",
+  "1泊2日",
+  "2泊3日",
+  "3泊4日",
+  "4泊5日",
+] as const;
+
+/**
+ * AI 旅程案の生成 UI。日数を選んで生成 → プレビュー → 「メモに追記」で
+ * scorecard.comment に流し込む（保存の実体は親の onUpdateScorecardField）。
+ * 場所の情報（名前・所在地・予算・同行者）は profile から自動で渡す。
+ */
+function ItineraryGenerator({
+  profile,
+  onAppend,
+}: {
+  profile?: Profile;
+  onAppend: (text: string) => void;
+}) {
+  const [days, setDays] = useState<string>("2泊3日");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<string | null>(null);
+  const [appended, setAppended] = useState(false);
+
+  const generate = async () => {
+    if (!profile || loading) return;
+    setLoading(true);
+    setError(null);
+    setAppended(false);
+    try {
+      const res = await fetch("/api/draft-itinerary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: profile.name,
+          days,
+          address: profile.address,
+          budgetMin: profile.desiredSalaryMin,
+          budgetMax: profile.desiredSalaryMax,
+          companion: profile.recruiter,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        itinerary?: string;
+        error?: string;
+      } | null;
+      if (!res.ok || !data?.itinerary) {
+        throw new Error(data?.error ?? "旅程案の生成に失敗しました。");
+      }
+      setResult(data.itinerary);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "旅程案の生成に失敗しました。",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <div className="w-28 shrink-0">
+          <InlineSelectField
+            value={days}
+            options={ITINERARY_DAYS_OPTIONS}
+            onSave={setDays}
+            ariaLabel="旅程の日数"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={generate}
+          disabled={loading || !profile}
+        >
+          {loading ? <Loader2 className="animate-spin" /> : <Sparkles />}
+          {result ? "作り直す" : "AIで旅程案を生成"}
+        </Button>
+      </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      {result && (
+        <>
+          <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap text-foreground">
+            {result}
+          </div>
+          <Button
+            size="sm"
+            className="self-start"
+            disabled={appended}
+            onClick={() => {
+              onAppend(result);
+              setAppended(true);
+            }}
+          >
+            {appended ? "メモに追記しました" : "メモに追記"}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ===== 検討ステージ詳細（旧モード 2、ADR-0015 で唯一のモードに） =====
 
 /**
@@ -215,12 +323,14 @@ function AttachmentUploader({ onAdd }: { onAdd: (a: Attachment) => void }) {
  */
 function Mode2StageDetail({
   scorecard,
+  profile,
   onUpdateAxis,
   onUpdateScorecardField,
   onAddAttachment,
   onRemoveAttachment,
 }: {
   scorecard: Scorecard;
+  profile?: Profile;
   onUpdateAxis: (stage: StageKey, axis: AxisKey, value: number | null) => void;
   onUpdateScorecardField: (
     stage: StageKey,
@@ -313,6 +423,24 @@ function Mode2StageDetail({
 
       <Separator />
 
+      {/* AI 旅程案（発展課題）— 生成してプレビュー → 下の「メモ」に追記できる */}
+      <Pane4Section
+        id={PANE4_SECTION_IDS.m2.itinerary}
+        title="AI旅程案"
+        className="gap-2"
+      >
+        <ItineraryGenerator
+          profile={profile}
+          onAppend={(text) => {
+            const current = scorecard.comment ?? "";
+            const next = current ? `${current}\n\n${text}` : text;
+            onUpdateScorecardField(scorecard.stage, "comment", next);
+          }}
+        />
+      </Pane4Section>
+
+      <Separator />
+
       {/* メモ（textarea） */}
       <Pane4Section
         id={PANE4_SECTION_IDS.m2.comment}
@@ -374,6 +502,7 @@ function Mode2StageDetail({
 export function CandidateDetailPane({
   selectedCandidateId,
   scorecards,
+  profile,
   selectedDetail,
   scrollAnchor,
   onScrollAnchorConsumed,
@@ -385,6 +514,7 @@ export function CandidateDetailPane({
 }: {
   selectedCandidateId: string;
   scorecards: Scorecard[];
+  profile?: Profile;
   selectedDetail: SelectedDetail;
   scrollAnchor: string | null;
   onScrollAnchorConsumed: () => void;
@@ -438,6 +568,7 @@ export function CandidateDetailPane({
               scorecards.find((s) => s.stage === selectedDetail.stage) ??
               createMinimalScorecard(selectedDetail.stage)
             }
+            profile={profile}
             onUpdateAxis={onUpdateAxis}
             onUpdateScorecardField={onUpdateScorecardField}
             onAddAttachment={onAddAttachment}

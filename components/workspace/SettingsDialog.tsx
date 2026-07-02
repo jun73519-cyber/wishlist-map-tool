@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { Download, Plus, Trash2, Upload } from "lucide-react";
 
-import { type Department } from "@/lib/schema";
+import { type Department, type Candidate, candidatesSchema } from "@/lib/schema";
 import { resetToSeedData } from "@/lib/storage";
 import { DeleteConfirmDialog } from "@/components/workspace/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
@@ -42,12 +42,71 @@ export function SettingsDialogContent({
     name: string;
   } | null>(null);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  // バックアップ（エクスポート/インポート）。データは DB（/api/places）と直接やり取りする。
+  const [backupMsg, setBackupMsg] = useState<string | null>(null);
+  const [importCandidates, setImportCandidates] = useState<Candidate[] | null>(
+    null,
+  );
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddDept = () => {
     const trimmed = newDeptName.trim();
     if (!trimmed) return;
     onAddDepartment(trimmed);
     setNewDeptName("");
+  };
+
+  // 全場所を JSON ファイルとしてダウンロード（データ消失への保険）。
+  const handleExport = async () => {
+    setBackupMsg(null);
+    try {
+      const res = await fetch("/api/places", { cache: "no-store" });
+      if (!res.ok) throw new Error();
+      const json = await res.text();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `wishlist-backup-${new Date().toLocaleDateString("en-CA")}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setBackupMsg("バックアップを保存しました。");
+    } catch {
+      setBackupMsg("バックアップの取得に失敗しました。");
+    }
+  };
+
+  // バックアップ JSON を検証してから、確認ダイアログを経て全置換する。
+  const handleImportFile = async (file: File) => {
+    setBackupMsg(null);
+    try {
+      const parsed = candidatesSchema.safeParse(JSON.parse(await file.text()));
+      if (!parsed.success) {
+        setBackupMsg(
+          "このファイルはバックアップの形式と一致しません（このアプリで保存した JSON を選んでください）。",
+        );
+        return;
+      }
+      setImportCandidates(parsed.data);
+    } catch {
+      setBackupMsg("ファイルを読み込めませんでした。");
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importCandidates) return;
+    try {
+      const res = await fetch("/api/places", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(importCandidates),
+      });
+      if (!res.ok) throw new Error();
+      location.reload();
+    } catch {
+      setImportCandidates(null);
+      setBackupMsg("復元に失敗しました。時間をおいて再度お試しください。");
+    }
   };
 
   return (
@@ -129,19 +188,60 @@ export function SettingsDialogContent({
 
           <Field>
             <FieldLabel>データ</FieldLabel>
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs text-muted-foreground">
-                追加・編集した内容を消して初期サンプルに戻します。
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0"
-                onClick={() => setResetConfirmOpen(true)}
-              >
-                サンプルデータに戻す
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  すべての場所を JSON ファイルに保存／ファイルから復元します。
+                </p>
+                <div className="flex shrink-0 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExport}
+                  >
+                    <Download data-icon="inline-start" />
+                    保存
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload data-icon="inline-start" />
+                    復元
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void handleImportFile(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+              </div>
+              {backupMsg && (
+                <p className="text-xs text-muted-foreground">{backupMsg}</p>
+              )}
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  追加・編集した内容を消して初期サンプルに戻します。
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => setResetConfirmOpen(true)}
+                >
+                  サンプルデータに戻す
+                </Button>
+              </div>
             </div>
           </Field>
         </FieldGroup>
@@ -174,6 +274,18 @@ export function SettingsDialogContent({
         description="追加・編集した場所やエリアはすべて消え、初期サンプルに戻ります。この操作は元に戻せません。"
         actionLabel="戻す"
         onConfirm={resetToSeedData}
+      />
+
+      <DeleteConfirmDialog
+        open={importCandidates !== null}
+        onOpenChange={(open) => {
+          if (!open) setImportCandidates(null);
+        }}
+        title="バックアップから復元しますか？"
+        itemName=""
+        description={`現在のすべての場所が、このバックアップの内容（${importCandidates?.length ?? 0} 件）に置き換わります。この操作は元に戻せません。`}
+        actionLabel="復元する"
+        onConfirm={handleImportConfirm}
       />
     </>
   );

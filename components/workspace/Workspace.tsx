@@ -773,6 +773,7 @@ export function Workspace({
                   <CandidateDetailPane
                     selectedCandidateId={selectedCandidateId}
                     scorecards={scorecards}
+                    profile={activeCandidate?.profile}
                     selectedDetail={selectedDetail}
                     scrollAnchor={scrollAnchor}
                     onScrollAnchorConsumed={consumeScrollAnchor}

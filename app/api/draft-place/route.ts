@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
 import { placeDraftSchema } from "@/lib/schema";
+import { createRateLimiter, clientIp } from "@/lib/rate-limit";
 
 // Google GenAI SDK は Node ランタイムで動かす（Edge 不可）。
 export const runtime = "nodejs";
@@ -10,23 +11,8 @@ export const runtime = "nodejs";
 const MAX_NAME_LEN = 200;
 const MAX_URL_LEN = 1000;
 
-// 簡易レート制限（IP ごと・スライディングウィンドウ）。公開URLで無認証のため、
-// 誰でも連打して Gemini の課金/クォータを燃やせるのを緩和する。サーバーレスでは
-// インスタンス単位のメモリなので厳密ではないが、素朴な乱用は十分に抑えられる。
-const RATE_WINDOW_MS = 60_000;
-const RATE_MAX = 8;
-const rateHits = new Map<string, number[]>();
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const recent = (rateHits.get(ip) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
-  recent.push(now);
-  rateHits.set(ip, recent);
-  return recent.length > RATE_MAX;
-}
-function clientIp(req: NextRequest): string {
-  const xff = req.headers.get("x-forwarded-for");
-  return xff ? xff.split(",")[0]!.trim() : "unknown";
-}
+// 簡易レート制限（詳細は lib/rate-limit.ts）。
+const isRateLimited = createRateLimiter(60_000, 8);
 
 /**
  * 場所の「AI下書き」生成 API（Google Gemini 版）。

@@ -51,6 +51,7 @@ export const PANE4_SECTION_IDS = {
   m2: {
     info: "pane4-m2-info",
     evaluation: "pane4-m2-evaluation",
+    itinerary: "pane4-m2-itinerary",
     comment: "pane4-m2-comment",
     summary: "pane4-m2-summary",
     attachments: "pane4-m2-attachments",
