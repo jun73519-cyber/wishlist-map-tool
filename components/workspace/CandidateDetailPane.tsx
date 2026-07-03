@@ -199,12 +199,18 @@ function AttachmentUploader({ onAdd }: { onAdd: (a: Attachment) => void }) {
 
 // ===== AI 旅程案（発展課題: /api/draft-itinerary） =====
 
+// /api/draft-itinerary の ALLOWED_DAYS と揃える（サーバー側が許可リストで検証する）。
 const ITINERARY_DAYS_OPTIONS = [
   "日帰り",
   "1泊2日",
   "2泊3日",
   "3泊4日",
   "4泊5日",
+  "6泊7日",
+  "10日間",
+  "2週間",
+  "3週間",
+  "1か月",
 ] as const;
 
 /**
