@@ -40,7 +40,7 @@
  *   - openspec/changes/add-4pane-workspace-template/design.md D51〜D56 / D65
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 
 import {
   type Profile,
@@ -60,9 +60,15 @@ import {
 } from "@/lib/data/factories";
 import { getCandidateAverageScore } from "@/lib/computed/scorecards";
 import { ARCHIVED_GROUP_LABEL, STAGE_LABELS } from "@/lib/labels";
+import { getWriteToken, writeHeaders } from "@/lib/storage";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import dynamic from "next/dynamic";
-import { MapPin, Map as MapIcon, NotebookText } from "lucide-react";
+import {
+  MapPin,
+  Map as MapIcon,
+  NotebookText,
+  ChartColumn,
+} from "lucide-react";
 
 import {
   ResizablePanelGroup,
@@ -77,6 +83,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { GlobalHeader } from "@/components/workspace/GlobalHeader";
+import { StatsView } from "@/components/workspace/StatsView";
 import { PositionPane } from "@/components/workspace/PositionPane";
 import { CandidateListPane } from "@/components/workspace/CandidateListPane";
 import { CandidateDashboardPane } from "@/components/workspace/CandidateDashboardPane";
@@ -141,8 +148,10 @@ export function Workspace({
   // Pane 1 で選択中のエリア（position.id）。null は「すべて」（全件表示）。
   // エリアを選ぶと Pane 2 はその area を持つ場所だけに絞り込まれる。
   const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
-  // Pane 3 の表示モード。"detail" = 場所の詳細（従来） / "map" = 地図ビュー。
-  const [pane3View, setPane3View] = useState<"detail" | "map">("detail");
+  // Pane 3 の表示モード。"detail" = 場所の詳細（従来） / "map" = 地図 / "stats" = 統計。
+  const [pane3View, setPane3View] = useState<"detail" | "map" | "stats">(
+    "detail",
+  );
 
   // 場所(candidates)はデータベース(Neon)に保存し、リロード・別端末・他人からも
   // 同じものが見えるようにする。`/api/places` 経由で読み書きする（SQL や接続文字列は
@@ -175,21 +184,31 @@ export function Workspace({
   }, []);
   // 保存は hydrated 後のみ（初回の seed を DB に書き戻して読み込みを上書きするのを防ぐ）。
   // 連続編集で叩きすぎないよう少しデバウンスしてから全件を同期保存する。
-  // 保存状態を UI に出す（無言のデータ喪失を防ぐ）。保存中／保存済み／失敗。
+  // 保存状態を UI に出す（無言のデータ喪失を防ぐ）。
+  // 保存中／保存済み／失敗／合言葉が必要（サーバーが書き込み保護中で 401）。
   const [saveState, setSaveState] = useState<
-    "idle" | "saving" | "saved" | "error"
+    "idle" | "saving" | "saved" | "error" | "unauthorized"
   >("idle");
+  // タブを閉じる直前の滑り込み保存（sendBeacon）用に、最新状態と
+  // 「未保存の変更が残っているか」をイベントハンドラから参照できるようにする。
+  const candidatesRef = useRef(candidates);
+  const pendingSaveRef = useRef(false);
   useEffect(() => {
     if (!hydrated) return;
+    candidatesRef.current = candidates;
+    pendingSaveRef.current = true;
     const timer = setTimeout(async () => {
       setSaveState("saving");
       try {
         const res = await fetch("/api/places", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: writeHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify(candidates),
         });
-        setSaveState(res.ok ? "saved" : "error");
+        if (res.ok) pendingSaveRef.current = false;
+        setSaveState(
+          res.ok ? "saved" : res.status === 401 ? "unauthorized" : "error",
+        );
       } catch {
         // 保存失敗は致命的でないが、UI に出してユーザーが気づけるようにする。
         setSaveState("error");
@@ -197,6 +216,26 @@ export function Workspace({
     }, 600);
     return () => clearTimeout(timer);
   }, [candidates, hydrated]);
+
+  // デバウンス(600ms)中にタブを閉じると未保存になるため、pagehide で滑り込み保存。
+  // sendBeacon はヘッダーを付けられないので、合言葉はクエリ ?token= で渡す。
+  useEffect(() => {
+    const flush = () => {
+      if (!pendingSaveRef.current) return;
+      const token = getWriteToken();
+      const url = token
+        ? `/api/places?token=${encodeURIComponent(token)}`
+        : "/api/places";
+      navigator.sendBeacon(
+        url,
+        new Blob([JSON.stringify(candidatesRef.current)], {
+          type: "application/json",
+        }),
+      );
+    };
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
 
   // Pane 4 の展開状態を派生計算（ADR-0015 §9 大決定 G）。
   // selectedDetail !== null かつ手動で畳んでいない → 開いている。
@@ -264,7 +303,8 @@ export function Workspace({
 
   const addCandidate = useCallback(
     (stage: StageKey, name: string) => {
-      const newId = `c-${Date.now()}`;
+      // Date.now() だと複数端末の同時追加で衝突し得るため UUID を使う（DB の主キーになる）。
+      const newId = `c-${crypto.randomUUID()}`;
       const newCandidate: Candidate = {
         id: newId,
         profile: createMinimalProfile(name),
@@ -292,7 +332,8 @@ export function Workspace({
       profile: Profile,
       coords?: { lat: number; lng: number },
     ) => {
-      const newId = `c-${Date.now()}`;
+      // Date.now() だと複数端末の同時追加で衝突し得るため UUID を使う（DB の主キーになる）。
+      const newId = `c-${crypto.randomUUID()}`;
       const newCandidate: Candidate = {
         id: newId,
         profile,
@@ -611,14 +652,20 @@ export function Workspace({
     ];
   }, [candidates, selectedAreaId]);
 
-  // 地図ビュー用の派生計算。Pane 2 と同じ絞り込み（エリア・非アーカイブ）を適用し、
-  // 座標を持つ場所だけをピンとして渡す（座標なしは件数ヒントとして表示）。
+  // 地図・統計ビューが共有する「Pane 2 と同じ絞り込み」後の場所（エリア・非アーカイブ）。
+  const visibleCandidates = useMemo(
+    () =>
+      candidates.filter(
+        (c) =>
+          !c.archived && (selectedAreaId === null || c.area === selectedAreaId),
+      ),
+    [candidates, selectedAreaId],
+  );
+
+  // 地図ビュー用の派生計算。座標を持つ場所だけをピンとして渡す
+  // （座標なしは件数ヒントとして表示）。
   const mapData = useMemo(() => {
-    const visible = candidates.filter(
-      (c) =>
-        !c.archived && (selectedAreaId === null || c.area === selectedAreaId),
-    );
-    const places = visible.flatMap((c) =>
+    const places = visibleCandidates.flatMap((c) =>
       typeof c.lat === "number" && typeof c.lng === "number"
         ? [
             {
@@ -631,8 +678,8 @@ export function Workspace({
           ]
         : [],
     );
-    return { places, totalCount: visible.length };
-  }, [candidates, selectedAreaId]);
+    return { places, totalCount: visibleCandidates.length };
+  }, [visibleCandidates]);
 
   return (
     // shadcn/ui の SidebarProvider が外側を取り、Pane 1 (`<Sidebar>`) を全高で固定
@@ -702,7 +749,11 @@ export function Workspace({
                     value={[pane3View]}
                     onValueChange={(groupValue) => {
                       const next = groupValue[0];
-                      if (next === "detail" || next === "map")
+                      if (
+                        next === "detail" ||
+                        next === "map" ||
+                        next === "stats"
+                      )
                         setPane3View(next);
                     }}
                     aria-label="Pane 3 の表示切替"
@@ -714,6 +765,10 @@ export function Workspace({
                     <ToggleGroupItem value="map" aria-label="地図を表示">
                       <MapIcon data-icon="inline-start" />
                       地図
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="stats" aria-label="統計を表示">
+                      <ChartColumn data-icon="inline-start" />
+                      統計
                     </ToggleGroupItem>
                   </ToggleGroup>
                 </div>
@@ -727,6 +782,11 @@ export function Workspace({
                       onSelectPlace={selectCandidate}
                       onOpenDetail={() => setPane3View("detail")}
                       onSetCoords={updateCoords}
+                    />
+                  ) : pane3View === "stats" ? (
+                    <StatsView
+                      candidates={visibleCandidates}
+                      departments={departments}
                     />
                   ) : activeCandidate ? (
                     <CandidateDashboardPane

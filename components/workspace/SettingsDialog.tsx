@@ -4,7 +4,12 @@ import { useRef, useState } from "react";
 import { Download, Plus, Trash2, Upload } from "lucide-react";
 
 import { type Department, type Candidate, candidatesSchema } from "@/lib/schema";
-import { resetToSeedData } from "@/lib/storage";
+import {
+  resetToSeedData,
+  getWriteToken,
+  setWriteToken,
+  writeHeaders,
+} from "@/lib/storage";
 import { DeleteConfirmDialog } from "@/components/workspace/DeleteConfirmDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -98,15 +103,34 @@ export function SettingsDialogContent({
     try {
       const res = await fetch("/api/places", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: writeHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(importCandidates),
       });
+      if (res.status === 401) {
+        setImportCandidates(null);
+        setBackupMsg(
+          "編集の合言葉が違います。下の「編集の合言葉」を入力してから再度お試しください。",
+        );
+        return;
+      }
       if (!res.ok) throw new Error();
       location.reload();
     } catch {
       setImportCandidates(null);
       setBackupMsg("復元に失敗しました。時間をおいて再度お試しください。");
     }
+  };
+
+  // 編集の合言葉（サーバーが WRITE_TOKEN で書き込み保護しているときに必要）。
+  const [tokenInput, setTokenInput] = useState(() => getWriteToken());
+  const [tokenMsg, setTokenMsg] = useState<string | null>(null);
+  const handleSaveToken = () => {
+    setWriteToken(tokenInput.trim());
+    setTokenMsg(
+      tokenInput.trim()
+        ? "合言葉を保存しました。次の保存から使われます。"
+        : "合言葉を削除しました。",
+    );
   };
 
   return (
@@ -182,6 +206,38 @@ export function SettingsDialogContent({
               ワークスペース名
             </FieldLabel>
             <Input id="settings-workspace-name" defaultValue="行きたい場所マップ帳" />
+          </Field>
+
+          <Separator />
+
+          <Field>
+            <FieldLabel htmlFor="settings-write-token">編集の合言葉</FieldLabel>
+            <p className="text-xs text-muted-foreground">
+              公開サイトが書き込み保護されている場合、ここに合言葉を入れると編集できます（この端末に記憶されます）。
+            </p>
+            <InputGroup>
+              <InputGroupInput
+                id="settings-write-token"
+                type="password"
+                placeholder="合言葉"
+                value={tokenInput}
+                onChange={(e) => {
+                  setTokenInput(e.target.value);
+                  setTokenMsg(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveToken();
+                }}
+              />
+              <InputGroupAddon align="inline-end">
+                <Button variant="outline" size="sm" onClick={handleSaveToken}>
+                  保存
+                </Button>
+              </InputGroupAddon>
+            </InputGroup>
+            {tokenMsg && (
+              <p className="text-xs text-muted-foreground">{tokenMsg}</p>
+            )}
           </Field>
 
           <Separator />

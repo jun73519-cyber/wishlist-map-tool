@@ -57,14 +57,23 @@ npm run dev   # http://localhost:3000
 - Vercel 環境変数に `DATABASE_URL` と `GEMINI_API_KEY` の両方が必要。
 - 2台で編集するときは「作業前 `git pull` / 作業後 `git push`」を徹底。
 
+## 書き込み保護（合言葉）
+
+- 環境変数 `WRITE_TOKEN` を設定すると、場所の保存・リセット（POST /api/places, /api/places/reset）に合言葉が必要になる（**閲覧 GET は誰でも可のまま**）。未設定なら書き込み自由（ローカル開発の既定）。
+- サーバー側の検証は `lib/write-guard.ts`（ヘッダー `x-write-token` または `?token=`。クエリは sendBeacon 用）。
+- クライアントは設定ダイアログ「編集の合言葉」で入力 → localStorage に保存（`lib/storage.ts`）。合言葉が違うとヘッダーに「合言葉が必要」と赤表示される。
+- 本番で有効化する手順: Vercel の環境変数に `WRITE_TOKEN` を追加 → Redeploy → 自分の各端末のアプリ設定で同じ合言葉を入力。
+
 ## 未対応・今後やること
 
 - [ ] **個人用データのプライベートDB分離**: 現状 localhost と本番（Vercel）が**同じDB**を指す。公開先＝サンプルのみ運用にしているため、ローカルで個人データを入れると公開先に漏れる。個人運用するなら localhost 用に別のNeon DB（or ブランチ）を用意し `.env.local` をそれに向ける。
 - [ ] **DBパスワードのローテーション**: 構築中に接続文字列を一度共有したため、Neon の Reset password で作り直し → `.env.local` と Vercel を更新。
-- [ ] （発展）認証（ログイン）。雛形方針では「次フェーズ」。
+- [ ] （発展）本格認証（ユーザーごとのログイン）。現状は共有合言葉方式まで実装済み。
+- [ ] PWA化・共有リンク（C-4）。
 
 ## 注意点
 
-- 公開アプリは**認証なし**。URLを知る人は誰でも閲覧・編集できる。個人情報は入れない。
-- 添付写真は `Candidate.data`(JSONB) に base64 で入るため、大量・大サイズは DB 行サイズに注意。
+- 公開アプリの閲覧は誰でも可。書き込みは `WRITE_TOKEN` 設定時のみ保護される（上記）。個人情報は入れない運用。
+- 添付写真は `Candidate.data`(JSONB) に base64 で入るため、大量・大サイズは DB 行サイズに注意（POST は 5MB 上限）。
 - base-ui のメニュー/ボタンのハンドラは `onClick`（`onSelect` は型は通るが無反応）。
+- 場所IDは `crypto.randomUUID()`。ステージの✓済み判定は Pane2 の位置基準（`deriveStageStatus(stage, currentStage, date)`）。

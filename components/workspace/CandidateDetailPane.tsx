@@ -155,7 +155,7 @@ function AttachmentUploader({ onAdd }: { onAdd: (a: Attachment) => void }) {
           size = formatBytes(file.size);
         }
         onAdd({
-          id: `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          id: `att-${crypto.randomUUID()}`,
           kind: "file",
           name: file.name,
           size,

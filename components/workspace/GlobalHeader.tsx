@@ -20,12 +20,13 @@ import {
 } from "@/components/ui/tooltip";
 import { SettingsDialogContent } from "@/components/workspace/SettingsDialog";
 
-type SaveState = "idle" | "saving" | "saved" | "error";
+type SaveState = "idle" | "saving" | "saved" | "error" | "unauthorized";
 
 const SAVE_LABEL: Record<Exclude<SaveState, "idle">, string> = {
   saving: "保存中…",
   saved: "保存済み",
   error: "保存できません",
+  unauthorized: "合言葉が必要（設定⚙で入力）",
 };
 
 type GlobalHeaderProps = {
@@ -78,7 +79,9 @@ export function GlobalHeader({
         <span
           aria-live="polite"
           className={`shrink-0 text-[11px] ${
-            saveState === "error" ? "text-destructive" : "text-muted-foreground"
+            saveState === "error" || saveState === "unauthorized"
+              ? "text-destructive"
+              : "text-muted-foreground"
           }`}
         >
           {SAVE_LABEL[saveState]}
