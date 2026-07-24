@@ -43,8 +43,11 @@ export function InlineSelectField({
   placeholder = "選択...",
 }: InlineSelectFieldProps) {
   return (
+    // Base UI の Select は「未選択」を null で表す（undefined は uncontrolled 扱いになり、
+    // 値が入った瞬間に controlled へ切り替わって警告が出る）。空文字は常に null に写像し、
+    // コンポーネントの生涯を通じて controlled（string | null）で一貫させる。
     <Select
-      value={value === "" ? undefined : value}
+      value={value === "" ? null : value}
       onValueChange={(v) => onSave(v ?? "")}
     >
       <SelectTrigger
