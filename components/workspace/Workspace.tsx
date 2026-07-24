@@ -576,6 +576,19 @@ export function Workspace({
     [selectedCandidateId],
   );
 
+  // 訪問済の場所の「感想」を更新する（Pane 4 の感想セクションから呼ばれる）。
+  // 保存は既存のデバウンス同期に乗り、DB では places.visited_note カラムに入る。
+  const updateVisitedNote = useCallback(
+    (value: string) => {
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === selectedCandidateId ? { ...c, visitedNote: value } : c,
+        ),
+      );
+    },
+    [selectedCandidateId],
+  );
+
   // Pane 4 内の `useEffect` 依存安定化のため、Workspace 側でメモ化して props で渡す。
   const consumeScrollAnchor = useCallback(() => setScrollAnchor(null), []);
   const togglePane4 = useCallback(() => setPane4ManuallyClosed((v) => !v), []);
@@ -833,6 +846,9 @@ export function Workspace({
                     onAddAttachment={addAttachment}
                     onRemoveAttachment={removeAttachment}
                     onTogglePane4={togglePane4}
+                    setProfile={setProfile}
+                    visitedNote={activeCandidate?.visitedNote ?? ""}
+                    onUpdateVisitedNote={updateVisitedNote}
                   />
                 </ResizablePanel>
               </>

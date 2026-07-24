@@ -313,13 +313,18 @@ function ItineraryGenerator({
 // ===== 検討ステージ詳細（旧モード 2、ADR-0015 で唯一のモードに） =====
 
 /**
- * モード 2（検討ステージ詳細、全ステージ共通テンプレート）。
- * 基本情報 / 評価 / メモ / 要約 / 写真・資料 の 5 ブロック構成。
+ * モード 2（検討ステージ詳細）。
  *
- * ステージ別ラベル分岐:
- *   - 「同行者」フィールド: 全ステージ共通
- *   - 「要約」見出し: 「気になる」のみ「下調べメモ」、それ以外は「記録・要約」
- *   - 「写真・資料」見出し: 全ステージ共通
+ * クリックした検討フロー行（`scorecard.stage`）で表示セクションを切り替える。
+ * 場所のステータス（訪問済かどうか）ではなく、開いた行が基準:
+ *   - 「気になる」行（stage === "screening"）:
+ *     基本情報 / 行きたい理由 / アクセス・見どころ / 評価 / AI旅程案 / メモ / 写真・資料。
+ *     ※場所が訪問済でも、気になる行を開けばこの計画表示になる。
+ *   - 「訪問済」行（stage === "final"）:
+ *     記録・要約 → メモ → 写真・資料 → 感想。計画系は出さない。
+ *
+ * 「下調べメモ」は廃止（summary は訪問済行の「記録・要約」でのみ表示。データは温存）。
+ * 「感想」は場所単位（Candidate.visitedNote）で、訪問済行の振り返りとして表示する。
  *
  * 各フィールドは `components/primitives/` の Inline* primitive で常時表示される
  * （Type-direct）。`interviewerOptions` は場所+ステージ単位でメモリ保持し、
@@ -328,6 +333,9 @@ function ItineraryGenerator({
 function Mode2StageDetail({
   scorecard,
   profile,
+  setProfile,
+  visitedNote,
+  onUpdateVisitedNote,
   onUpdateAxis,
   onUpdateScorecardField,
   onAddAttachment,
@@ -335,6 +343,9 @@ function Mode2StageDetail({
 }: {
   scorecard: Scorecard;
   profile?: Profile;
+  setProfile: React.Dispatch<React.SetStateAction<Profile>>;
+  visitedNote: string;
+  onUpdateVisitedNote: (value: string) => void;
   onUpdateAxis: (stage: StageKey, axis: AxisKey, value: number | null) => void;
   onUpdateScorecardField: (
     stage: StageKey,
@@ -344,9 +355,10 @@ function Mode2StageDetail({
   onAddAttachment: (stage: StageKey, attachment: Attachment) => void;
   onRemoveAttachment: (stage: StageKey, attachmentId: string) => void;
 }) {
-  const isScreening = scorecard.stage === "screening";
+  // Pane 4 の表示は「クリックした検討フロー行（scorecard.stage）」で切り替える。
+  // 場所のステータス（訪問済かどうか）ではなく、開いた行を基準にする。
+  const isFinalStage = scorecard.stage === "final";
   const interviewerLabel = "同行者";
-  const summaryHeading = isScreening ? "下調べメモ" : "記録・要約";
   const attachmentHeading = "写真・資料";
 
   const [interviewerOptions, setInterviewerOptions] = useState<ComboOption[]>(
@@ -357,6 +369,85 @@ function Mode2StageDetail({
     setInterviewerOptions((prev) =>
       prev.find((o) => o.value === newOpt.value) ? prev : [...prev, newOpt],
     );
+
+  // 場所メモ（行きたい理由・アクセス見どころ）は profile 由来。ステージ scorecard では
+  // なく場所単位なので setProfile 経由で更新する（Pane 3 の旧編集経路と同じ保存先）。
+  const updateProfileField = <K extends keyof Profile>(
+    key: K,
+    value: Profile[K],
+  ) => setProfile((p) => ({ ...p, [key]: value }));
+
+  // メモ / 要約 / 写真・資料 は 気になる・訪問済 の両方で使うが表示順が異なるため、
+  // JSX を 1 箇所で定義して 2 つの分岐から使い回す。
+  const commentSection = (
+    <Pane4Section
+      id={PANE4_SECTION_IDS.m2.comment}
+      title="メモ"
+      className="gap-2"
+    >
+      <InlineTextareaField
+        value={scorecard.comment ?? ""}
+        onSave={(v) => onUpdateScorecardField(scorecard.stage, "comment", v)}
+        ariaLabel="メモ"
+      />
+    </Pane4Section>
+  );
+
+  // 「記録・要約」= summary フィールド。訪問済行でのみ表示する。
+  // 気になる行での別名「下調べメモ」は廃止（データ自体は summary に温存）。
+  const summarySection = (
+    <Pane4Section
+      id={PANE4_SECTION_IDS.m2.summary}
+      title="記録・要約"
+      className="gap-2"
+    >
+      <InlineTextareaField
+        value={scorecard.summary ?? ""}
+        onSave={(v) => onUpdateScorecardField(scorecard.stage, "summary", v)}
+        ariaLabel="記録・要約"
+      />
+    </Pane4Section>
+  );
+
+  const attachmentsSection = (
+    <Pane4Section
+      id={PANE4_SECTION_IDS.m2.attachments}
+      title={attachmentHeading}
+      className="gap-2"
+    >
+      <AttachmentList
+        items={scorecard.attachments}
+        onRemove={(id) => onRemoveAttachment(scorecard.stage, id)}
+      />
+      <AttachmentUploader onAdd={(a) => onAddAttachment(scorecard.stage, a)} />
+    </Pane4Section>
+  );
+
+  // 「訪問済」行: 振り返り（記録・要約 → メモ → 写真・資料 → 感想）。計画系は出さない。
+  if (isFinalStage) {
+    return (
+      <div>
+        {summarySection}
+        <Separator />
+        {commentSection}
+        <Separator />
+        {attachmentsSection}
+        <Separator />
+        {/* 感想（場所単位、DB の visited_note カラムに永続化） */}
+        <Pane4Section
+          id={PANE4_SECTION_IDS.m2.visitedNote}
+          title="感想"
+          className="gap-2"
+        >
+          <InlineTextareaField
+            value={visitedNote}
+            onSave={onUpdateVisitedNote}
+            ariaLabel="感想"
+          />
+        </Pane4Section>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -399,6 +490,36 @@ function Mode2StageDetail({
 
       <Separator />
 
+      {/* 場所メモ（行きたい理由・アクセス見どころ）— profile 由来、基本情報の直後に配置。
+          「気になる」の場所だけに出す（訪問済の場所は visited 分岐で非表示）。 */}
+      <Pane4Section
+        id={PANE4_SECTION_IDS.m2.motivation}
+        title="行きたい理由"
+        className="gap-2"
+      >
+        <InlineTextareaField
+          value={profile?.motivationFull ?? ""}
+          onSave={(v) => updateProfileField("motivationFull", v)}
+          ariaLabel="行きたい理由"
+        />
+      </Pane4Section>
+
+      <Separator />
+
+      <Pane4Section
+        id={PANE4_SECTION_IDS.m2.access}
+        title="アクセス・見どころ"
+        className="gap-2"
+      >
+        <InlineTextareaField
+          value={profile?.careerText ?? ""}
+          onSave={(v) => updateProfileField("careerText", v)}
+          ariaLabel="アクセス・見どころ"
+        />
+      </Pane4Section>
+
+      <Separator />
+
       {/* 評価（行きたい度 ★、編集可能。★ クリックで値設定 / × でリセット） */}
       <Pane4Section id={PANE4_SECTION_IDS.m2.evaluation} title="評価">
         <div className="flex flex-col gap-2 rounded-lg border border-border bg-card px-3 py-3">
@@ -436,49 +557,12 @@ function Mode2StageDetail({
       <Separator />
 
       {/* メモ（textarea） */}
-      <Pane4Section
-        id={PANE4_SECTION_IDS.m2.comment}
-        title="メモ"
-        className="gap-2"
-      >
-        <InlineTextareaField
-          value={scorecard.comment ?? ""}
-          onSave={(v) => onUpdateScorecardField(scorecard.stage, "comment", v)}
-          ariaLabel="メモ"
-        />
-      </Pane4Section>
+      {commentSection}
 
       <Separator />
 
-      {/* 要約（「気になる」: 下調べメモ / それ以外: 記録・要約） */}
-      <Pane4Section
-        id={PANE4_SECTION_IDS.m2.summary}
-        title={summaryHeading}
-        className="gap-2"
-      >
-        <InlineTextareaField
-          value={scorecard.summary ?? ""}
-          onSave={(v) => onUpdateScorecardField(scorecard.stage, "summary", v)}
-          ariaLabel={summaryHeading}
-        />
-      </Pane4Section>
-
-      <Separator />
-
-      {/* 写真・資料（全ステージ共通）— 一覧 + アップロード */}
-      <Pane4Section
-        id={PANE4_SECTION_IDS.m2.attachments}
-        title={attachmentHeading}
-        className="gap-2"
-      >
-        <AttachmentList
-          items={scorecard.attachments}
-          onRemove={(id) => onRemoveAttachment(scorecard.stage, id)}
-        />
-        <AttachmentUploader
-          onAdd={(a) => onAddAttachment(scorecard.stage, a)}
-        />
-      </Pane4Section>
+      {/* 写真・資料 — 一覧 + アップロード（下調べメモ=summary は気になる行では非表示） */}
+      {attachmentsSection}
     </div>
   );
 }
@@ -505,6 +589,9 @@ export function CandidateDetailPane({
   onAddAttachment,
   onRemoveAttachment,
   onTogglePane4,
+  setProfile,
+  visitedNote,
+  onUpdateVisitedNote,
 }: {
   selectedCandidateId: string;
   scorecards: Scorecard[];
@@ -521,6 +608,11 @@ export function CandidateDetailPane({
   onAddAttachment: (stage: StageKey, attachment: Attachment) => void;
   onRemoveAttachment: (stage: StageKey, attachmentId: string) => void;
   onTogglePane4: () => void;
+  /** 「気になる」行の場所メモ（行きたい理由・アクセス見どころ）の編集用。profile を更新する。 */
+  setProfile: React.Dispatch<React.SetStateAction<Profile>>;
+  /** 場所の「感想」（Candidate.visitedNote、未記入は ""）。訪問済行で表示・編集する。 */
+  visitedNote: string;
+  onUpdateVisitedNote: (value: string) => void;
 }) {
   useEffect(() => {
     if (!scrollAnchor) return;
@@ -563,6 +655,9 @@ export function CandidateDetailPane({
               createMinimalScorecard(selectedDetail.stage)
             }
             profile={profile}
+            setProfile={setProfile}
+            visitedNote={visitedNote}
+            onUpdateVisitedNote={onUpdateVisitedNote}
             onUpdateAxis={onUpdateAxis}
             onUpdateScorecardField={onUpdateScorecardField}
             onAddAttachment={onAddAttachment}

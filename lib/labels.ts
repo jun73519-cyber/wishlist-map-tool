@@ -21,14 +21,12 @@ export const EVALUATION_AXIS: Record<AxisKey, string> = {
 } as const;
 
 // Pane 2 のグループ見出しに出すステージ表示名（日本語）。
-// 場所の「検討ステージ」: 気になる → 計画中 → 予約済 → 訪問済。
+// 場所の「検討ステージ」: 気になる → 訪問済 の 2 段階（旧 4 段階から計画中・予約済を廃止）。
 // `Scorecard.label` とは独立に持つ（場所ごとの個別ラベルではなく、
-// 列としてのステージ名なので Record で固定）。内部キー（screening 等）は
+// 列としてのステージ名なので Record で固定）。内部キー（screening / final）は
 // 雛形の構造を維持するため据え置き、表示名のみ旅行ドメインに差し替えている。
 export const STAGE_LABELS: Record<StageKey, string> = {
   screening: "気になる",
-  first: "計画中",
-  second: "予約済",
   final: "訪問済",
 };
 
@@ -50,10 +48,15 @@ export const PANE3_SECTION = {
 export const PANE4_SECTION_IDS = {
   m2: {
     info: "pane4-m2-info",
+    // 「気になる」の場所だけに出す場所メモ（profile 由来。基本情報の直後に配置）。
+    access: "pane4-m2-access",
+    motivation: "pane4-m2-motivation",
     evaluation: "pane4-m2-evaluation",
     itinerary: "pane4-m2-itinerary",
     comment: "pane4-m2-comment",
     summary: "pane4-m2-summary",
     attachments: "pane4-m2-attachments",
+    // 訪問済の場所だけに表示する「感想」（visited_note に永続化、場所単位）。
+    visitedNote: "pane4-m2-visited-note",
   },
 } as const;

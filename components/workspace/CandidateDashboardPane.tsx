@@ -62,7 +62,6 @@ import {
   InlineTextField,
   InlineDateField,
   InlineComboboxField,
-  InlineTextareaField,
   InlineFieldRow,
   ScoreLabel,
   SectionLabel,
@@ -542,30 +541,6 @@ function ApplicationInfoCardContent({
             />
           </ContactRow>
         </ul>
-      </section>
-
-      <Separator />
-
-      {/* アクセス・見どころ */}
-      <section className="flex flex-col gap-2 py-4">
-        <SectionLabel>アクセス・見どころ</SectionLabel>
-        <InlineTextareaField
-          value={profile.careerText}
-          onSave={(v) => updateField("careerText", v)}
-          ariaLabel="アクセス・見どころ"
-        />
-      </section>
-
-      <Separator />
-
-      {/* 行きたい理由 */}
-      <section className="flex flex-col gap-2 pt-4">
-        <SectionLabel>行きたい理由</SectionLabel>
-        <InlineTextareaField
-          value={profile.motivationFull}
-          onSave={(v) => updateField("motivationFull", v)}
-          ariaLabel="行きたい理由"
-        />
       </section>
     </div>
   );

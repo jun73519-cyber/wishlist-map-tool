@@ -42,22 +42,18 @@ describe("calculateAverageScore", () => {
 
 describe("getLatestDoneScorecard", () => {
   it("現在位置より先のステージしか無ければ undefined", () => {
-    const cards = [
-      baseScorecard({ stage: "first", date: "2026-04-01" }),
-      baseScorecard({ stage: "second" }),
-    ];
+    const cards = [baseScorecard({ stage: "final", date: "2026-04-01" })];
     expect(getLatestDoneScorecard(cards, "screening")).toBeUndefined();
   });
 
   it("配列末尾に近い done（現在位置以前）を返す", () => {
     const cards = [
       baseScorecard({ stage: "screening", date: "2026-04-01" }),
-      baseScorecard({ stage: "first", date: "2026-04-10" }),
-      baseScorecard({ stage: "second", date: "2026-04-20" }),
+      baseScorecard({ stage: "final", date: "2026-04-20" }),
     ];
-    // 現在位置が「計画中(first)」なら screening / first が done → 末尾に近い first
-    const latest = getLatestDoneScorecard(cards, "first");
-    expect(latest?.stage).toBe("first");
+    // 現在位置が「訪問済(final)」なら screening / final が done → 末尾に近い final
+    const latest = getLatestDoneScorecard(cards, "final");
+    expect(latest?.stage).toBe("final");
   });
 });
 
@@ -97,13 +93,13 @@ describe("getCandidateAverageScore / getScorecardsAverageScore", () => {
         },
       }),
       baseScorecard({
-        stage: "first",
+        stage: "final",
         axisScores: {
           wishLevel: 3,
         },
       }),
     ];
-    expect(getScorecardsAverageScore(cards, "first")).toBe(3);
+    expect(getScorecardsAverageScore(cards, "final")).toBe(3);
   });
 });
 
@@ -111,21 +107,17 @@ describe("getCommentedScorecards", () => {
   it("done（現在位置以前）かつ comment 付きのみ STAGE_ORDER 順に返す", () => {
     const cards = [
       baseScorecard({
-        stage: "first",
-        comment: "前向き",
+        stage: "final",
+        date: "2026-05-01",
+        comment: "行ってよかった",
       }),
       baseScorecard({
         stage: "screening",
         comment: "下調べ済み",
       }),
-      baseScorecard({
-        stage: "second",
-        date: "2026-05-01",
-        comment: "未確定だが期待",
-      }),
     ];
-    // 現在位置が first なら second はまだ done でない
-    const result = getCommentedScorecards(cards, "first");
-    expect(result.map((c) => c.stage)).toEqual(["screening", "first"]);
+    // 現在位置が screening なら final はまだ done でない
+    const result = getCommentedScorecards(cards, "screening");
+    expect(result.map((c) => c.stage)).toEqual(["screening"]);
   });
 });

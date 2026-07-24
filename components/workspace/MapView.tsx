@@ -47,8 +47,6 @@ type MapViewProps = {
 // ステージ → 色トークンの対応。地図ピンとレジェンドで共用する。
 const STAGE_CHART_VAR: Record<StageKey, string> = {
   screening: "--chart-1",
-  first: "--chart-2",
-  second: "--chart-3",
   final: "--chart-4",
 };
 

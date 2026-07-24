@@ -65,43 +65,6 @@
         "attachments": []
       },
       {
-        "stage": "first",
-        "label": "計画中",
-        "date": "2026-01-15",
-        "format": "飛行機",
-        "interviewer": "友人（2人）",
-        "comment": "3泊4日。1日目夕方にピーク、2日目は深水埗とスターフェリー、3日目は離島（南丫島）も検討。",
-        "summary": "弾丸でなく3泊にして、夜景・グルメ・離島をゆったり回るプランに。",
-        "axisScores": { "wishLevel": 5 },
-        "attachments": [
-          {
-            "id": "att-c2-first-plan",
-            "kind": "txt",
-            "name": "香港3泊プラン.txt",
-            "size": "3 KB",
-            "previewText": "Day1 夕方 ビクトリアピーク（日没ねらい）\nDay2 深水埗 屋台 → スターフェリー夜景\nDay3 南丫島 で海鮮ランチ\nDay4 おみやげ＆帰国"
-          }
-        ]
-      },
-      {
-        "stage": "second",
-        "label": "予約済",
-        "date": "2026-02-10",
-        "format": "飛行機",
-        "interviewer": "友人（2人）",
-        "comment": "航空券と中環（セントラル）のホテルを予約済み。ピークトラムは事前WEBチケットで行列回避。",
-        "summary": "宿は中環エリアに3泊。移動はオクトパスカード（ICカード）を空港で確保予定。",
-        "axisScores": { "wishLevel": 5 },
-        "attachments": [
-          {
-            "id": "att-c2-second-booking",
-            "kind": "pdf",
-            "name": "航空券・ホテル予約確認.pdf",
-            "size": "104 KB"
-          }
-        ]
-      },
-      {
         "stage": "final",
         "label": "訪問済",
         "date": "2026-03-14",
@@ -153,19 +116,9 @@
         "summary": "奥入瀬渓流の紅葉散歩と十和田湖。ベストシーズンは10月中〜下旬。",
         "axisScores": { "wishLevel": 4 },
         "attachments": []
-      },
-      {
-        "stage": "first",
-        "label": "計画中",
-        "date": "2026-06-01",
-        "format": "電車",
-        "interviewer": "家族（3人）",
-        "comment": "紅葉ピークは混むので宿を早めに押さえたい。渓流は歩き＋一部レンタサイクルで。",
-        "axisScores": { "wishLevel": 4 },
-        "attachments": []
       }
     ],
-    "stage": "first"
+    "stage": "screening"
   },
   {
     "id": "c4",
@@ -197,36 +150,9 @@
         "summary": "庭園・現代アート・市場グルメが徒歩圏にまとまった金沢の王道コース。",
         "axisScores": { "wishLevel": 4 },
         "attachments": []
-      },
-      {
-        "stage": "first",
-        "label": "計画中",
-        "date": "2026-05-20",
-        "format": "電車",
-        "interviewer": "パートナー",
-        "comment": "21世紀美術館のプール作品は予約枠が埋まりやすいので先に確保する。",
-        "axisScores": { "wishLevel": 4 },
-        "attachments": []
-      },
-      {
-        "stage": "second",
-        "label": "予約済",
-        "date": "2026-07-23",
-        "format": "電車",
-        "interviewer": "パートナー",
-        "comment": "新幹線とひがし茶屋街近くの宿を予約。美術館チケットも確保済み。",
-        "axisScores": { "wishLevel": 4 },
-        "attachments": [
-          {
-            "id": "att-c4-second-ticket",
-            "kind": "pdf",
-            "name": "美術館チケット.pdf",
-            "size": "62 KB"
-          }
-        ]
       }
     ],
-    "stage": "second"
+    "stage": "screening"
   },
   {
     "id": "c5",
@@ -292,19 +218,9 @@
         "summary": "天空都市マチュピチュ。入場制限・高山病対策・乾季ねらいが計画の要。",
         "axisScores": { "wishLevel": 5 },
         "attachments": []
-      },
-      {
-        "stage": "first",
-        "label": "計画中",
-        "date": "2026-04-12",
-        "format": "飛行機",
-        "interviewer": "友人（2人）",
-        "comment": "クスコで2泊して高地順応→列車で移動の行程を検討中。ワイナピチュ登頂枠も狙う。",
-        "axisScores": { "wishLevel": 5 },
-        "attachments": []
       }
     ],
-    "stage": "first"
+    "stage": "screening"
   },
   {
     "id": "c7",

@@ -83,9 +83,24 @@ export const AXIS_ORDER = axisKeySchema.options;
 
 // ===== 検討フロー =====
 
-/** 検討ステージのキー。`STAGE_ORDER` と一致する 4 段階。 */
-export const stageKeySchema = z.enum(["screening", "first", "second", "final"]);
+/**
+ * 検討ステージのキー。`STAGE_ORDER` と一致する 2 段階（気になる → 訪問済）。
+ *
+ * 旧 4 段階（screening / first / second / final）から `first`（計画中）・
+ * `second`（予約済）を廃止した。DB やバックアップに旧値が残っていても
+ * クラッシュしないよう、`candidateSchema` の preprocess で `first`/`second` を
+ * `screening`（気になる）へ寄せるフォールバックを持つ（要件: データを壊さない）。
+ */
+export const stageKeySchema = z.enum(["screening", "final"]);
 export type StageKey = z.infer<typeof stageKeySchema>;
+
+/** 廃止した旧ステージ値。読み込み時のフォールバック判定に使う。 */
+const LEGACY_STAGE_VALUES = ["first", "second"];
+
+/** 旧ステージ値なら "screening" に寄せる。既知の値・未知の値はそのまま通す。 */
+function normalizeStage(value: unknown): unknown {
+  return LEGACY_STAGE_VALUES.includes(value as string) ? "screening" : value;
+}
 
 /** ステージの実施ステータス。done = 実施済 / planned = 予定済 / pending = 未定。 */
 export const stageStatusSchema = z.enum(["done", "planned", "pending"]);
@@ -178,7 +193,7 @@ export const STAGE_ORDER = stageKeySchema.options;
  * 各 scorecard の派生 status (`deriveStageStatus`) とは独立に持ち、
  * 「現在どのステージに居るか」を表す。
  */
-export const candidateSchema = z.object({
+const candidateObjectSchema = z.object({
   id: z.string(),
   profile: profileSchema,
   scorecards: z.array(scorecardSchema),
@@ -197,7 +212,37 @@ export const candidateSchema = z.object({
   // 入り方は 3 通り: AI 下書きの推定 / 基本情報の手入力 / 地図クリックで指定。
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  // 訪問済（stage === "final"）の場所に記録する「感想」（自由記述）。
+  // DB では places.visited_note カラム（TEXT NULL）に保存し、data JSONB には
+  // 含めない（lib/db.ts の readPlaces / writePlaces で詰め替える）。
+  // optional なので既存データ・シードはそのまま読める。
+  visitedNote: z.string().optional(),
 });
+
+/**
+ * 場所スキーマ本体。内側のオブジェクト検証の前に preprocess でフォールバックを行う:
+ *   - `stage` が旧値（first / second）なら `screening` に寄せる
+ *   - `scorecards` から旧ステージのエントリを除去（「気になる」側に同内容があるため
+ *     保全不要。残すと screening に寄って重複するので落とす）
+ * これにより DB・バックアップに旧 4 段階のデータが残っていても読み込みでクラッシュしない。
+ */
+export const candidateSchema = z.preprocess((raw) => {
+  if (raw === null || typeof raw !== "object") return raw;
+  const c = raw as Record<string, unknown>;
+  const scorecards = Array.isArray(c.scorecards)
+    ? c.scorecards.filter(
+        (s) =>
+          !(
+            s !== null &&
+            typeof s === "object" &&
+            LEGACY_STAGE_VALUES.includes(
+              (s as Record<string, unknown>).stage as string,
+            )
+          ),
+      )
+    : c.scorecards;
+  return { ...c, stage: normalizeStage(c.stage), scorecards };
+}, candidateObjectSchema);
 export type Candidate = z.infer<typeof candidateSchema>;
 
 // ===== JSON 全体用スキーマ =====
